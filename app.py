@@ -6,12 +6,11 @@ tasks = []
 
 def add_task(title: str) -> dict:
     """Add a new task and return it."""
-    if not task_description or not task_description.strip():
-       raise ValueError("Task cannot be empty")
+    if not title or not title.strip():
+        raise ValueError("Task title cannot be empty")
     task = {"id": len(tasks) + 1, "title": title.strip(), "done": False}
     tasks.append(task)
     return task
-
 
 def complete_task(task_id: int) -> dict:
     """Mark a task as done by its ID."""

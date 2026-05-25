@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI DevOps Bot — Pipeline Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #21262d;
+    }
+
+    header h1 { font-size: 1.5rem; font-weight: 600; }
+    header p  { font-size: 0.85rem; color: #8b949e; margin-top: 4px; }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-green  { background: #1a4731; color: #3fb950; }
+    .badge-red    { background: #4c1519; color: #f85149; }
+    .badge-yellow { background: #3d2f00; color: #d29922; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+
+    .stat-card .label {
+      font-size: 0.75rem;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .stat-card .value {
+      font-size: 2rem;
+      font-weight: 700;
+    }
+
+    .stat-card .value.green  { color: #3fb950; }
+    .stat-card .value.red    { color: #f85149; }
+    .stat-card .value.blue   { color: #58a6ff; }
+    .stat-card .value.yellow { color: #d29922; }
+
+    .section {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .section h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #e6edf3;
+    }
+
+    .run-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid #21262d;
+      font-size: 0.875rem;
+    }
+
+    .run-row:last-child { border-bottom: none; }
+
+    .run-row .run-name { color: #e6edf3; flex: 1; }
+    .run-row .run-branch { color: #8b949e; font-size: 0.75rem; margin: 0 1rem; }
+    .run-row .run-time  { color: #8b949e; font-size: 0.75rem; min-width: 80px; text-align: right; }
+
+    .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 80px; margin-top: 0.5rem; }
+    .bar {
+      flex: 1;
+      border-radius: 4px 4px 0 0;
+      min-height: 8px;
+      position: relative;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .bar:hover { opacity: 0.8; }
+    .bar.pass { background: #3fb950; }
+    .bar.fail { background: #f85149; }
+
+    .ai-summary {
+      background: #0d419d22;
+      border: 1px solid #1f6feb;
+      border-radius: 8px;
+      padding: 1rem;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: #cdd9e5;
+    }
+
+    .ai-summary .ai-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #58a6ff;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .loading { color: #8b949e; font-size: 0.875rem; }
+
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: #8b949e;
+    }
+
+    footer a { color: #58a6ff; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>AI DevOps Bot</h1>
+    <p>Pipeline Dashboard — <span id="repo-name">noobstar2306/ai-devops-bot</span></p>
+  </div>
+  <span class="badge badge-yellow" id="overall-status">Loading...</span>
+</header>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="label">Total runs</div>
+    <div class="value blue" id="stat-total">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Passed</div>
+    <div class="value green" id="stat-passed">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Failed</div>
+    <div class="value red" id="stat-failed">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Success rate</div>
+    <div class="value blue" id="stat-rate">—</div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Build history (last 14 runs)</h2>
+  <div class="bar-chart" id="bar-chart"></div>
+</div>
+
+<div class="section">
+  <h2>Recent runs</h2>
+  <div id="runs-list"><span class="loading">Loading pipeline runs...</span></div>
+</div>
+
+<div class="section">
+  <h2>AI health summary</h2>
+  <div class="ai-summary">
+    <div class="ai-label">Generated from recent pipeline data</div>
+    <div id="ai-summary-text"><span class="loading">Generating summary...</span></div>
+  </div>
+</div>
+
+<footer>
+  Built with GitHub Actions + Gemini AI &nbsp;·&nbsp;
+  <a href="https://github.com/noobstar2306/ai-devops-bot" target="_blank">View source</a>
+</footer>
+
+<script>
+const REPO = "noobstar2306/ai-devops-bot";
+const API  = `https://api.github.com/repos/${REPO}/actions/runs?per_page=20`;
+
+async function loadRuns() {
+  try {
+    const res  = await fetch(API);
+    const data = await res.json();
+    const runs = data.workflow_runs || [];
+
+    // Stats
+    const total  = runs.length;
+    const passed = runs.filter(r => r.conclusion === "success").length;
+    const failed = runs.filter(r => r.conclusion === "failure").length;
+    const rate   = total ? Math.round((passed / total) * 100) : 0;
+
+    document.getElementById("stat-total").textContent  = total;
+    document.getElementById("stat-passed").textContent = passed;
+    document.getElementById("stat-failed").textContent = failed;
+    document.getElementById("stat-rate").textContent   = rate + "%";
+
+    // Overall status badge
+    const badge = document.getElementById("overall-status");
+    const latest = runs[0]?.conclusion;
+    if (latest === "success") {
+      badge.textContent = "All systems go";
+      badge.className = "badge badge-green";
+    } else if (latest === "failure") {
+      badge.textContent = "Last build failed";
+      badge.className = "badge badge-red";
+    } else {
+      badge.textContent = "Running...";
+      badge.className = "badge badge-yellow";
+    }
+
+    // Bar chart (last 14)
+    const chart = document.getElementById("bar-chart");
+    chart.innerHTML = "";
+    const chartRuns = runs.slice(0, 14).reverse();
+    const maxH = 80;
+    chartRuns.forEach((r, i) => {
+      const bar = document.createElement("div");
+      const h = Math.max(12, maxH - i * 2);
+      bar.className = `bar ${r.conclusion === "success" ? "pass" : "fail"}`;
+      bar.style.height = `${h}px`;
+      bar.title = `${r.display_title} — ${r.conclusion}`;
+      chart.appendChild(bar);
+    });
+
+    // Runs list
+    const list = document.getElementById("runs-list");
+    list.innerHTML = "";
+    runs.slice(0, 8).forEach(r => {
+      const conclusion = r.conclusion || "in_progress";
+      const badgeClass = conclusion === "success" ? "badge-green" : conclusion === "failure" ? "badge-red" : "badge-yellow";
+      const badgeText  = conclusion === "success" ? "passed" : conclusion === "failure" ? "failed" : "running";
+      const time = new Date(r.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+      const row = document.createElement("div");
+      row.className = "run-row";
+      row.innerHTML = `
+        <span class="run-name">${r.display_title || r.name}</span>
+        <span class="run-branch">${r.head_branch}</span>
+        <span class="badge ${badgeClass}">${badgeText}</span>
+        <span class="run-time">${time}</span>
+      `;
+      list.appendChild(row);
+    });
+
+    // AI summary
+    generateSummary(total, passed, failed, rate, runs[0]);
+
+  } catch (err) {
+    document.getElementById("runs-list").innerHTML = `<span class="loading">Could not load runs: ${err.message}</span>`;
+  }
+}
+
+function generateSummary(total, passed, failed, rate, latest) {
+  const el = document.getElementById("ai-summary-text");
+  let summary = "";
+
+  if (total === 0) {
+    summary = "No pipeline runs yet. Push some code to get started!";
+  } else if (rate === 100) {
+    summary = `Your pipeline is in excellent health — all ${total} runs have passed. Keep up the great work! Your tests are doing their job and catching issues before they reach production.`;
+  } else if (rate >= 80) {
+    summary = `Your pipeline is healthy with a ${rate}% success rate across ${total} runs. ${failed} run${failed > 1 ? "s" : ""} failed — check the recent failures to spot any patterns. Overall you're in good shape.`;
+  } else if (rate >= 50) {
+    summary = `Your pipeline has a ${rate}% success rate across ${total} runs. There have been ${failed} failures recently — worth investigating what's causing them. Consider reviewing your test coverage and error handling.`;
+  } else {
+    summary = `Your pipeline needs attention — only ${rate}% of ${total} runs passed. ${failed} runs have failed. Focus on stabilising the failing tests before adding new features. Check the AI failure explanations on your PRs for hints.`;
+  }
+
+  if (latest?.conclusion === "failure") {
+    summary += " Your most recent build failed — check the Actions tab for the AI explanation.";
+  } else if (latest?.conclusion === "success") {
+    summary += " Your latest build is green.";
+  }
+
+  el.textContent = summary;
+}
+
+loadRuns();
+</script>
+</body>
+</html>

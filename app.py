@@ -6,8 +6,6 @@ tasks = []
 
 def add_task(title: str) -> dict:
     """Add a new task and return it."""
-    if not title or not title.strip():
-        raise ValueError("Task title cannot be empty")
     task = {"id": len(tasks) + 1, "title": title.strip(), "done": False}
     tasks.append(task)
     return task

@@ -13,7 +13,6 @@ jobs:
     name: Run tests
     runs-on: ubuntu-latest
 
-    # Give the pipeline permission to post PR comments
     permissions:
       contents: read
       pull-requests: write
@@ -40,9 +39,9 @@ jobs:
           exit ${PIPESTATUS[0]}
         continue-on-error: true
 
-      # This step only runs if tests failed
+      # Runs only on PRs when tests fail — explains what broke
       - name: AI explains the failure
-        if: steps.run_tests.outcome == 'failure'
+        if: steps.run_tests.outcome == 'failure' && github.event_name == 'pull_request'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -51,7 +50,16 @@ jobs:
           ERROR_LOG=$(cat test_output.txt)
           python explain_failure.py "$ERROR_LOG"
 
-      # Fail the pipeline after AI explanation is posted
+      # Runs on every PR — reviews the code changes
+      - name: AI code review
+        if: github.event_name == 'pull_request'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          python review_code.py
+
       - name: Fail if tests failed
         if: steps.run_tests.outcome == 'failure'
         run: exit 1

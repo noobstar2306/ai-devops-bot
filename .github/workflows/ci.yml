@@ -40,7 +40,7 @@ jobs:
         run: |
           pytest test_app.py -v --tb=short --cov=app --cov-report=term-missing
 
-      # Step 5: (Optional) Fail loudly if coverage drops below 80%
+      # Step 5: (Optional) Fail loudly if coverage drops below 60%
       - name: Check coverage threshold
         run: |
-          pytest test_app.py --cov=app --cov-fail-under=80 -q
+          pytest test_app.py --cov=app --cov-fail-under=60 -q

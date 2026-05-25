@@ -11,6 +11,7 @@ import urllib.error
 
 def ask_gemini(error_log: str) -> str:
     """Send the error log to Gemini and get a plain-English explanation."""
+    import time
     api_key = os.environ["GEMINI_API_KEY"]
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
 
@@ -33,10 +34,17 @@ Here is the error output:
         method="POST"
     )
 
-    with urllib.request.urlopen(req) as response:
-        result = json.loads(response.read().decode("utf-8"))
-        return result["candidates"][0]["content"]["parts"][0]["text"]
-
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req) as response:
+                result = json.loads(response.read().decode("utf-8"))
+                return result["candidates"][0]["content"]["parts"][0]["text"]
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < 2:
+                print(f"Rate limited, waiting 30 seconds... (attempt {attempt + 1}/3)")
+                time.sleep(30)
+            else:
+                raise
 
 def post_github_comment(comment: str):
     """Post a comment on the GitHub PR that triggered this pipeline."""

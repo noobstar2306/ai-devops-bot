@@ -1,0 +1,46 @@
+# .github/workflows/ci.yml
+#
+# This is your CI pipeline. GitHub reads this file automatically.
+# Every time you push code or open a Pull Request, this runs.
+
+name: CI Pipeline  # the name shown in the GitHub Actions tab
+
+# TRIGGER: when does this pipeline run?
+on:
+  push:
+    branches: ["main"]        # runs on every push to main
+  pull_request:
+    branches: ["main"]        # runs on every PR targeting main
+
+# JOBS: the actual work to do
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest    # GitHub gives us a free Linux machine
+
+    steps:
+      # Step 1: Download your code onto the machine
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov
+
+      # Step 4: Run the tests and show a coverage report
+      - name: Run tests with coverage
+        run: |
+          pytest test_app.py -v --tb=short --cov=app --cov-report=term-missing
+
+      # Step 5: (Optional) Fail loudly if coverage drops below 80%
+      - name: Check coverage threshold
+        run: |
+          pytest test_app.py --cov=app --cov-fail-under=80 -q

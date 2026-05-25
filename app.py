@@ -50,3 +50,6 @@ if __name__ == "__main__":
     print("\nPending only:")
     for t in get_tasks(only_pending=True):
         print(f"  - {t['title']}")
+
+def count_tasks():
+    return len(tasks)

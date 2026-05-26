@@ -12,7 +12,7 @@ import urllib.error
 def ask_gemini(error_log: str) -> str:
     """Send the error log to Gemini and get a plain-English explanation."""
     api_key = os.environ["GEMINI_API_KEY"]
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
 
     prompt = f"""You are a helpful DevOps assistant for a beginner developer.
 A CI pipeline just failed. Explain what went wrong in simple, friendly language.

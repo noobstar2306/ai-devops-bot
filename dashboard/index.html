@@ -6,142 +6,83 @@
   <title>AI DevOps Bot — Pipeline Dashboard</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0d1117;
-      color: #e6edf3;
-      min-height: 100vh;
-      padding: 2rem;
-    }
-
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 2rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid #21262d;
-    }
-
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; padding: 2rem; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #21262d; }
     header h1 { font-size: 1.5rem; font-weight: 600; }
     header p  { font-size: 0.85rem; color: #8b949e; margin-top: 4px; }
-
-    .badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
     .badge-green  { background: #1a4731; color: #3fb950; }
     .badge-red    { background: #4c1519; color: #f85149; }
     .badge-yellow { background: #3d2f00; color: #d29922; }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-
-    .stat-card {
-      background: #161b22;
-      border: 1px solid #21262d;
-      border-radius: 10px;
-      padding: 1.25rem;
-    }
-
-    .stat-card .label {
-      font-size: 0.75rem;
-      color: #8b949e;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 8px;
-    }
-
-    .stat-card .value {
-      font-size: 2rem;
-      font-weight: 700;
-    }
-
-    .stat-card .value.green  { color: #3fb950; }
-    .stat-card .value.red    { color: #f85149; }
-    .stat-card .value.blue   { color: #58a6ff; }
-    .stat-card .value.yellow { color: #d29922; }
-
-    .section {
-      background: #161b22;
-      border: 1px solid #21262d;
-      border-radius: 10px;
-      padding: 1.25rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .section h2 {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-      color: #e6edf3;
-    }
-
-    .run-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.6rem 0;
-      border-bottom: 1px solid #21262d;
-      font-size: 0.875rem;
-    }
-
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 1.25rem; }
+    .stat-card .label { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .stat-card .value { font-size: 2rem; font-weight: 700; }
+    .stat-card .value.green { color: #3fb950; }
+    .stat-card .value.red   { color: #f85149; }
+    .stat-card .value.blue  { color: #58a6ff; }
+    .section { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; }
+    .section h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #e6edf3; }
+    .run-row { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid #21262d; font-size: 0.875rem; }
     .run-row:last-child { border-bottom: none; }
-
-    .run-row .run-name { color: #e6edf3; flex: 1; }
+    .run-row .run-name   { color: #e6edf3; flex: 1; }
     .run-row .run-branch { color: #8b949e; font-size: 0.75rem; margin: 0 1rem; }
-    .run-row .run-time  { color: #8b949e; font-size: 0.75rem; min-width: 80px; text-align: right; }
-
+    .run-row .run-time   { color: #8b949e; font-size: 0.75rem; min-width: 80px; text-align: right; }
     .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 80px; margin-top: 0.5rem; }
-    .bar {
-      flex: 1;
-      border-radius: 4px 4px 0 0;
-      min-height: 8px;
-      position: relative;
-      cursor: pointer;
-      transition: opacity 0.2s;
-    }
+    .bar { flex: 1; border-radius: 4px 4px 0 0; min-height: 8px; cursor: pointer; transition: opacity 0.2s; }
     .bar:hover { opacity: 0.8; }
     .bar.pass { background: #3fb950; }
     .bar.fail { background: #f85149; }
-
-    .ai-summary {
-      background: #0d419d22;
-      border: 1px solid #1f6feb;
-      border-radius: 8px;
-      padding: 1rem;
-      font-size: 0.875rem;
-      line-height: 1.6;
-      color: #cdd9e5;
-    }
-
-    .ai-summary .ai-label {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #58a6ff;
-      margin-bottom: 6px;
-      font-weight: 600;
-    }
-
+    .ai-summary { background: #0d419d22; border: 1px solid #1f6feb; border-radius: 8px; padding: 1rem; font-size: 0.875rem; line-height: 1.6; color: #cdd9e5; }
+    .ai-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #58a6ff; margin-bottom: 6px; font-weight: 600; }
     .loading { color: #8b949e; font-size: 0.875rem; }
-
-    footer {
-      text-align: center;
-      margin-top: 2rem;
-      font-size: 0.75rem;
-      color: #8b949e;
-    }
-
+    footer { text-align: center; margin-top: 2rem; font-size: 0.75rem; color: #8b949e; }
     footer a { color: #58a6ff; text-decoration: none; }
+
+    /* ── TIPS BUTTON ── */
+    #tips-btn {
+      position: fixed; bottom: 2rem; right: 2rem;
+      width: 56px; height: 56px; border-radius: 50%;
+      background: #161b22; border: 2px solid #d29922;
+      font-size: 1.5rem; cursor: pointer;
+      z-index: 9999; pointer-events: all;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 20px rgba(210,153,34,0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    #tips-btn:hover { transform: scale(1.1); box-shadow: 0 8px 28px rgba(210,153,34,0.5); }
+
+    /* ── TIPS OVERLAY ── */
+    #tips-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); z-index: 99999;
+      align-items: center; justify-content: center;
+    }
+    #tips-overlay.open { display: flex; }
+
+    /* ── TIPS MODAL ── */
+    #tips-modal {
+      background: #0d1117; border: 1px solid #21262d;
+      border-radius: 16px; width: 90%; max-width: 500px;
+      overflow: hidden; animation: popIn 0.2s ease;
+      font-family: -apple-system, sans-serif;
+    }
+    @keyframes popIn { from { opacity:0; transform: scale(0.9); } to { opacity:1; transform: scale(1); } }
+    #tips-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid #21262d; }
+    #tips-badge { font-size: 0.7rem; font-weight: 700; color: #d29922; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 3px; }
+    #tips-subtitle { font-size: 0.7rem; color: #8b949e; font-family: monospace; }
+    #tips-close { background: none; border: none; color: #8b949e; font-size: 1.1rem; cursor: pointer; padding: 4px 8px; line-height: 1; }
+    #tips-close:hover { color: #e6edf3; }
+    #tips-body { padding: 1.5rem 1.25rem; min-height: 130px; display: flex; align-items: center; }
+    #tips-loading { display: flex; align-items: center; gap: 0.75rem; color: #8b949e; font-size: 0.875rem; }
+    .spinner { width: 18px; height: 18px; border: 2px solid #21262d; border-top-color: #d29922; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #tips-text { font-size: 0.95rem; line-height: 1.75; color: #e6edf3; display: none; }
+    #tips-text strong { color: #d29922; }
+    #tips-footer { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1.25rem; border-top: 1px solid #21262d; }
+    #tips-refresh { font-family: monospace; font-size: 0.75rem; background: none; border: 1px solid #21262d; color: #8b949e; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+    #tips-refresh:hover { border-color: #d29922; color: #d29922; }
+    #tips-topic { font-family: monospace; font-size: 0.65rem; color: #8b949e; text-transform: uppercase; }
   </style>
 </head>
 <body>
@@ -155,22 +96,10 @@
 </header>
 
 <div class="stats-grid">
-  <div class="stat-card">
-    <div class="label">Total runs</div>
-    <div class="value blue" id="stat-total">—</div>
-  </div>
-  <div class="stat-card">
-    <div class="label">Passed</div>
-    <div class="value green" id="stat-passed">—</div>
-  </div>
-  <div class="stat-card">
-    <div class="label">Failed</div>
-    <div class="value red" id="stat-failed">—</div>
-  </div>
-  <div class="stat-card">
-    <div class="label">Success rate</div>
-    <div class="value blue" id="stat-rate">—</div>
-  </div>
+  <div class="stat-card"><div class="label">Total runs</div><div class="value blue" id="stat-total">—</div></div>
+  <div class="stat-card"><div class="label">Passed</div><div class="value green" id="stat-passed">—</div></div>
+  <div class="stat-card"><div class="label">Failed</div><div class="value red" id="stat-failed">—</div></div>
+  <div class="stat-card"><div class="label">Success rate</div><div class="value blue" id="stat-rate">—</div></div>
 </div>
 
 <div class="section">
@@ -196,17 +125,41 @@
   <a href="https://github.com/noobstar2306/ai-devops-bot" target="_blank">View source</a>
 </footer>
 
+<!-- TIPS BUTTON -->
+<button id="tips-btn" title="Get an AI DevOps tip">💡</button>
+
+<!-- TIPS MODAL -->
+<div id="tips-overlay">
+  <div id="tips-modal">
+    <div id="tips-header">
+      <div>
+        <span id="tips-badge">Did you know?</span>
+        <span id="tips-subtitle">AI DevOps Tips</span>
+      </div>
+      <button id="tips-close">✕</button>
+    </div>
+    <div id="tips-body">
+      <div id="tips-content">
+        <div id="tips-loading"><div class="spinner"></div><span>Generating tip...</span></div>
+        <div id="tips-text"></div>
+      </div>
+    </div>
+    <div id="tips-footer">
+      <button id="tips-refresh">↻ New tip</button>
+      <span id="tips-topic"></span>
+    </div>
+  </div>
+</div>
+
 <script>
+// ── Dashboard ──
 const REPO = "noobstar2306/ai-devops-bot";
-const API  = `https://api.github.com/repos/${REPO}/actions/runs?per_page=20`;
 
 async function loadRuns() {
   try {
-    const res  = await fetch(API);
+    const res  = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=20`);
     const data = await res.json();
     const runs = data.workflow_runs || [];
-
-    // Stats
     const total  = runs.length;
     const passed = runs.filter(r => r.conclusion === "success").length;
     const failed = runs.filter(r => r.conclusion === "failure").length;
@@ -217,263 +170,116 @@ async function loadRuns() {
     document.getElementById("stat-failed").textContent = failed;
     document.getElementById("stat-rate").textContent   = rate + "%";
 
-    // Overall status badge
-    const badge = document.getElementById("overall-status");
+    const badge  = document.getElementById("overall-status");
     const latest = runs[0]?.conclusion;
-    if (latest === "success") {
-      badge.textContent = "All systems go";
-      badge.className = "badge badge-green";
-    } else if (latest === "failure") {
-      badge.textContent = "Last build failed";
-      badge.className = "badge badge-red";
-    } else {
-      badge.textContent = "Running...";
-      badge.className = "badge badge-yellow";
-    }
+    if (latest === "success") { badge.textContent = "All systems go"; badge.className = "badge badge-green"; }
+    else if (latest === "failure") { badge.textContent = "Last build failed"; badge.className = "badge badge-red"; }
+    else { badge.textContent = "Running..."; badge.className = "badge badge-yellow"; }
 
-    // Bar chart (last 14)
-    const chart = document.getElementById("bar-chart");
+    const chart    = document.getElementById("bar-chart");
     chart.innerHTML = "";
-    const chartRuns = runs.slice(0, 14).reverse();
-    const maxH = 80;
-    chartRuns.forEach((r, i) => {
+    runs.slice(0, 14).reverse().forEach((r, i) => {
       const bar = document.createElement("div");
-      const h = Math.max(12, maxH - i * 2);
       bar.className = `bar ${r.conclusion === "success" ? "pass" : "fail"}`;
-      bar.style.height = `${h}px`;
+      bar.style.height = `${Math.max(12, 80 - i * 2)}px`;
       bar.title = `${r.display_title} — ${r.conclusion}`;
       chart.appendChild(bar);
     });
 
-    // Runs list
     const list = document.getElementById("runs-list");
     list.innerHTML = "";
     runs.slice(0, 8).forEach(r => {
-      const conclusion = r.conclusion || "in_progress";
-      const badgeClass = conclusion === "success" ? "badge-green" : conclusion === "failure" ? "badge-red" : "badge-yellow";
-      const badgeText  = conclusion === "success" ? "passed" : conclusion === "failure" ? "failed" : "running";
-      const time = new Date(r.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-
+      const c  = r.conclusion || "in_progress";
+      const bc = c === "success" ? "badge-green" : c === "failure" ? "badge-red" : "badge-yellow";
+      const bt = c === "success" ? "passed" : c === "failure" ? "failed" : "running";
+      const t  = new Date(r.created_at).toLocaleDateString("en-IN", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" });
       const row = document.createElement("div");
       row.className = "run-row";
-      row.innerHTML = `
-        <span class="run-name">${r.display_title || r.name}</span>
-        <span class="run-branch">${r.head_branch}</span>
-        <span class="badge ${badgeClass}">${badgeText}</span>
-        <span class="run-time">${time}</span>
-      `;
+      row.innerHTML = `<span class="run-name">${r.display_title||r.name}</span><span class="run-branch">${r.head_branch}</span><span class="badge ${bc}">${bt}</span><span class="run-time">${t}</span>`;
       list.appendChild(row);
     });
 
-    // AI summary
-    generateSummary(total, passed, failed, rate, runs[0]);
+    const el = document.getElementById("ai-summary-text");
+    if (total === 0) el.textContent = "No pipeline runs yet. Push some code to get started!";
+    else if (rate === 100) el.textContent = `Your pipeline is in excellent health — all ${total} runs have passed. Keep up the great work!`;
+    else if (rate >= 80) el.textContent = `Your pipeline is healthy with a ${rate}% success rate across ${total} runs. ${failed} run${failed>1?"s":""} failed — check for patterns.`;
+    else if (rate >= 50) el.textContent = `Your pipeline has a ${rate}% success rate across ${total} runs. ${failed} failures recently — review test coverage and error handling.`;
+    else el.textContent = `Your pipeline needs attention — only ${rate}% of ${total} runs passed. Focus on stabilising failing tests before adding new features.`;
+    if (latest === "failure") el.textContent += " Your most recent build failed — check the AI explanation on your PR.";
+    else if (latest === "success") el.textContent += " Your latest build is green.";
 
   } catch (err) {
     document.getElementById("runs-list").innerHTML = `<span class="loading">Could not load runs: ${err.message}</span>`;
   }
 }
 
-function generateSummary(total, passed, failed, rate, latest) {
-  const el = document.getElementById("ai-summary-text");
-  let summary = "";
+// ── Tips ──
+const CATEGORIES = ['Did you know?','Pro tip','Quick fact','Best practice','Fun fact'];
+const TOPICS = [
+  'GitHub Actions CI/CD pipelines','AI in DevOps and AIOps',
+  'Docker and containerization','Kubernetes and orchestration',
+  'DevSecOps security practices','Python automation for DevOps',
+  'Monitoring and observability','Git best practices',
+  'Infrastructure as Code with Terraform','LLM APIs in developer workflows'
+];
 
-  if (total === 0) {
-    summary = "No pipeline runs yet. Push some code to get started!";
-  } else if (rate === 100) {
-    summary = `Your pipeline is in excellent health — all ${total} runs have passed. Keep up the great work! Your tests are doing their job and catching issues before they reach production.`;
-  } else if (rate >= 80) {
-    summary = `Your pipeline is healthy with a ${rate}% success rate across ${total} runs. ${failed} run${failed > 1 ? "s" : ""} failed — check the recent failures to spot any patterns. Overall you're in good shape.`;
-  } else if (rate >= 50) {
-    summary = `Your pipeline has a ${rate}% success rate across ${total} runs. There have been ${failed} failures recently — worth investigating what's causing them. Consider reviewing your test coverage and error handling.`;
-  } else {
-    summary = `Your pipeline needs attention — only ${rate}% of ${total} runs passed. ${failed} runs have failed. Focus on stabilising the failing tests before adding new features. Check the AI failure explanations on your PRs for hints.`;
-  }
-
-  if (latest?.conclusion === "failure") {
-    summary += " Your most recent build failed — check the Actions tab for the AI explanation.";
-  } else if (latest?.conclusion === "success") {
-    summary += " Your latest build is green.";
-  }
-
-  el.textContent = summary;
+function openTips() {
+  document.getElementById('tips-overlay').classList.add('open');
+  fetchTip();
 }
 
-loadRuns();
-</script>
+function closeTips() {
+  document.getElementById('tips-overlay').classList.remove('open');
+}
 
-<!-- ── AI TIPS BUTTON ── -->
-<button id="tips-btn" onclick="openTips()" title="Get an AI DevOps tip">💡</button>
+async function fetchTip() {
+  const loading  = document.getElementById('tips-loading');
+  const text     = document.getElementById('tips-text');
+  const badge    = document.getElementById('tips-badge');
+  const topic    = document.getElementById('tips-topic');
+  const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
+  const topicVal = TOPICS[Math.floor(Math.random() * TOPICS.length)];
 
-<!-- ── AI TIPS MODAL ── -->
-<div id="tips-overlay" onclick="if(event.target===this)closeTips()">
-  <div id="tips-modal">
-    <div id="tips-header">
-      <div id="tips-title">
-        <span id="tips-type-badge">Did you know?</span>
-        <span style="font-size:0.7rem;color:#8b949e;font-family:monospace;">AI DevOps Tips</span>
-      </div>
-      <button onclick="closeTips()" id="tips-close">✕</button>
-    </div>
-    <div id="tips-body">
-      <div id="tips-content">
-        <div id="tips-loading"><div class="spinner"></div><span>Generating tip...</span></div>
-        <div id="tips-text" style="display:none"></div>
-      </div>
-    </div>
-    <div id="tips-footer">
-      <button onclick="fetchTip()" id="tips-refresh">↻ New tip</button>
-      <span id="tips-category"></span>
-    </div>
-  </div>
-</div>
+  badge.textContent = category;
+  topic.textContent = topicVal;
+  loading.style.display = 'flex';
+  text.style.display    = 'none';
+  text.innerHTML        = '';
 
-<style>
-  #tips-btn {
-    position: fixed; bottom: 2rem; right: 2rem;
-    width: 52px; height: 52px; border-radius: 50%;
-    background: #161b22; border: 1px solid #21262d;
-    font-size: 1.4rem; cursor: pointer; z-index: 9999;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-  }
-  #tips-btn:hover {
-    border-color: #d29922; transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 8px 28px rgba(210,153,34,0.25);
-  }
-  #tips-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
-    z-index: 300; align-items: center; justify-content: center;
-  }
-  #tips-overlay.open { display: flex; }
-  #tips-modal {
-    background: #0d1117; border: 1px solid #21262d;
-    border-radius: 16px; width: 90%; max-width: 500px;
-    overflow: hidden; animation: popIn 0.25s ease;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  }
-  @keyframes popIn {
-    from { opacity: 0; transform: scale(0.92) translateY(16px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
-  }
-  #tips-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 1rem 1.25rem; border-bottom: 1px solid #21262d;
-  }
-  #tips-title { display: flex; flex-direction: column; gap: 4px; }
-  #tips-type-badge {
-    font-family: monospace; font-size: 0.7rem; font-weight: 700;
-    color: #d29922; text-transform: uppercase; letter-spacing: 0.1em;
-  }
-  #tips-close {
-    background: none; border: none; color: #8b949e;
-    font-size: 1rem; cursor: pointer; padding: 4px 8px;
-    border-radius: 4px; transition: color 0.2s;
-  }
-  #tips-close:hover { color: #e6edf3; }
-  #tips-body {
-    padding: 1.5rem 1.25rem; min-height: 140px;
-    display: flex; align-items: center;
-  }
-  #tips-content { width: 100%; }
-  #tips-loading {
-    display: flex; align-items: center; gap: 0.75rem;
-    color: #8b949e; font-size: 0.875rem;
-  }
-  .spinner {
-    width: 18px; height: 18px;
-    border: 2px solid #21262d; border-top-color: #d29922;
-    border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  #tips-text { font-size: 0.95rem; line-height: 1.75; color: #e6edf3; }
-  #tips-text strong { color: #d29922; font-weight: 600; }
-  #tips-footer {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0.875rem 1.25rem; border-top: 1px solid #21262d;
-  }
-  #tips-refresh {
-    font-family: monospace; font-size: 0.75rem;
-    background: none; border: 1px solid #21262d; color: #8b949e;
-    padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all 0.2s;
-  }
-  #tips-refresh:hover { border-color: #d29922; color: #d29922; }
-  #tips-category {
-    font-family: monospace; font-size: 0.65rem;
-    color: #8b949e; text-transform: uppercase; letter-spacing: 0.1em;
-  }
-</style>
-
-<script>
-  const CATEGORIES = ['Did you know?', 'Pro tip', 'Quick fact', 'Best practice', 'Fun fact'];
-  const TOPICS = [
-    'GitHub Actions CI/CD pipelines',
-    'AI in DevOps and AIOps',
-    'Docker and containerization',
-    'Kubernetes and orchestration',
-    'DevSecOps security practices',
-    'Python automation for DevOps',
-    'Monitoring and observability',
-    'Git best practices',
-    'Infrastructure as Code with Terraform',
-    'LLM APIs in developer workflows',
-  ];
-
-  function openTips() {
-    document.getElementById('tips-overlay').classList.add('open');
-    fetchTip();
-  }
-
-  function closeTips() {
-    document.getElementById('tips-overlay').classList.remove('open');
-  }
-
-  async function fetchTip() {
-    const loading  = document.getElementById('tips-loading');
-    const text     = document.getElementById('tips-text');
-    const badge    = document.getElementById('tips-type-badge');
-    const cat      = document.getElementById('tips-category');
-    const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
-    const topic    = TOPICS[Math.floor(Math.random() * TOPICS.length)];
-
-    badge.textContent = category;
-    cat.textContent   = topic;
-    loading.style.display = 'flex';
-    text.style.display    = 'none';
-    text.innerHTML        = '';
-
-    try {
-      const GEMINI_KEY = 'YOUR_GEMINI_API_KEY_HERE';
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`, {
+  try {
+    const GEMINI_KEY = 'YOUR_GEMINI_API_KEY_HERE';
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+      {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `Give me one "${category}" about: ${topic}.
-Format: Start with a bold heading (use <strong> tags), then 2-3 sentences of insight.
-Keep it practical, specific, and useful for a beginner DevOps engineer.
-No bullet points. No preamble. Just the tip directly.` }] }]
+          contents: [{ parts: [{ text: `Give me one "${category}" about: ${topicVal}. Format: Start with a bold heading using <strong> tags, then 2-3 sentences. Keep it practical for a beginner DevOps engineer. No bullet points. No preamble. Just the tip.` }] }]
         })
-      });
-
-      const data    = await response.json();
-      const tipText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not load tip. Try again!';
-          }]
-        })
-      });
-
-      const data    = await response.json();
-      const tipText = data.content?.[0]?.text || 'Could not load tip. Try again!';
-      loading.style.display = 'none';
-      text.style.display    = 'block';
-      text.innerHTML        = tipText;
-    } catch (err) {
-      loading.style.display = 'none';
-      text.style.display    = 'block';
-      text.innerHTML        = '<strong>Connection error.</strong> Try refreshing the page.';
-    }
+      }
+    );
+    const data    = await res.json();
+    const tipText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not load tip. Try again!';
+    loading.style.display = 'none';
+    text.style.display    = 'block';
+    text.innerHTML        = tipText;
+  } catch(err) {
+    loading.style.display = 'none';
+    text.style.display    = 'block';
+    text.innerHTML        = '<strong>Connection error.</strong> Try clicking New tip.';
   }
+}
 
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTips(); });
+// Wire up events after DOM is ready
+document.getElementById('tips-btn').addEventListener('click', openTips);
+document.getElementById('tips-close').addEventListener('click', closeTips);
+document.getElementById('tips-refresh').addEventListener('click', fetchTip);
+document.getElementById('tips-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeTips();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTips(); });
+
+loadRuns();
 </script>
 </body>
 </html>

@@ -3,20 +3,36 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="AI DevOps Bot — live pipeline dashboard showing build health, history and AI-generated summaries."/>
   <title>AI DevOps Bot — Pipeline Dashboard</title>
+
+  <!--
+    FONTS
+    JetBrains Mono — used for all code-like elements: labels, badges, timestamps, monospace text.
+    Outfit         — used for all body text, headings, and general UI copy.
+    Both loaded from Google Fonts with preconnect for faster loading.
+  -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
+    /*
+      DESIGN TOKENS
+      All colours, opacities, and reused values are defined here as CSS custom
+      properties so they can be changed in one place. Suffix "-dim" means a
+      semi-transparent version of the colour used for backgrounds and glows.
+    */
     :root {
-      --bg:        #060810;
-      --bg2:       #0c0f18;
-      --bg3:       #111520;
-      --bg4:       #161c2d;
-      --border:    #1e2538;
-      --border2:   #252d42;
-      --text:      #e2e8f8;
-      --muted:     #6b7894;
-      --muted2:    #8892aa;
+      --bg:        #060810;   /* page background */
+      --bg2:       #0c0f18;   /* modal background */
+      --bg3:       #111520;   /* card / section background */
+      --bg4:       #161c2d;   /* badge / pill background */
+      --border:    #1e2538;   /* default border */
+      --border2:   #252d42;   /* slightly lighter border for hover states */
+      --text:      #e2e8f8;   /* primary text */
+      --muted:     #6b7894;   /* secondary / label text */
+      --muted2:    #8892aa;   /* slightly brighter muted text */
       --green:     #00d68f;
       --green-dim: rgba(0,214,143,0.12);
       --red:       #ff4d6a;
@@ -25,12 +41,21 @@
       --blue-dim:  rgba(77,159,255,0.12);
       --amber:     #ffb547;
       --amber-dim: rgba(255,181,71,0.12);
-      --purple:    #a78bfa;
     }
 
+    /*
+      RESET
+      Removes default browser margins/padding and sets border-box sizing
+      so padding is included in element width/height calculations.
+    */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
 
+    /*
+      BASE BODY
+      Sets the font, dark background colour, and text colour for the whole page.
+      overflow-x hidden prevents horizontal scroll from any overflowing elements.
+    */
     body {
       font-family: 'Outfit', sans-serif;
       background: var(--bg);
@@ -39,7 +64,12 @@
       overflow-x: hidden;
     }
 
-    /* Grid background */
+    /*
+      GRID BACKGROUND (body::before)
+      Creates a subtle blue dot-grid pattern fixed behind all page content.
+      pointer-events: none ensures it never blocks clicks.
+      z-index: 0 keeps it behind everything else.
+    */
     body::before {
       content: '';
       position: fixed; inset: 0;
@@ -47,22 +77,37 @@
         linear-gradient(rgba(77,159,255,0.025) 1px, transparent 1px),
         linear-gradient(90deg, rgba(77,159,255,0.025) 1px, transparent 1px);
       background-size: 32px 32px;
-      pointer-events: none; z-index: 0;
+      pointer-events: none;
+      z-index: 0;
     }
 
-    /* Ambient glow */
+    /*
+      AMBIENT GLOW (body::after)
+      A large blurred ellipse centred at the top of the page that gives the
+      dark background a subtle blue atmospheric depth.
+    */
     body::after {
       content: '';
       position: fixed;
       top: -200px; left: 50%; transform: translateX(-50%);
       width: 800px; height: 400px;
       background: radial-gradient(ellipse, rgba(77,159,255,0.06) 0%, transparent 70%);
-      pointer-events: none; z-index: 0;
+      pointer-events: none;
+      z-index: 0;
     }
 
+    /*
+      PAGE WRAPPER
+      Constrains content to 1100px, centres it, and lifts it above the
+      background layer with z-index: 1.
+    */
     .page { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 2rem; }
 
-    /* ── HEADER ── */
+    /*
+      HEADER
+      Top bar showing the project name, repo path, and live status pill.
+      flex-wrap allows it to stack on narrow screens.
+    */
     header {
       display: flex; align-items: flex-start; justify-content: space-between;
       margin-bottom: 2.5rem; padding-bottom: 1.5rem;
@@ -72,6 +117,7 @@
 
     .header-left { display: flex; align-items: center; gap: 1rem; }
 
+    /* Square icon box next to the project name */
     .header-icon {
       width: 44px; height: 44px; border-radius: 10px;
       background: linear-gradient(135deg, var(--blue-dim), var(--green-dim));
@@ -80,18 +126,17 @@
       font-size: 1.2rem;
     }
 
-    .header-text h1 {
-      font-size: 1.2rem; font-weight: 600; color: var(--text);
-      letter-spacing: -0.02em;
-    }
-
-    .header-text p {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.7rem; color: var(--muted); margin-top: 2px;
-    }
+    .header-text h1 { font-size: 1.2rem; font-weight: 600; letter-spacing: -0.02em; }
+    .header-text p  { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
 
     .header-right { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 
+    /*
+      STATUS PILL
+      Coloured badge in the header showing green / red / amber based on
+      the conclusion of the most recent pipeline run.
+      Three modifier classes (pill-green, pill-red, pill-amber) swap the colours.
+    */
     .status-pill {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 5px 14px; border-radius: 20px;
@@ -100,352 +145,250 @@
       border: 1px solid; transition: all 0.3s;
     }
 
-    .status-pill .dot {
-      width: 6px; height: 6px; border-radius: 50%;
-    }
+    /* Small animated dot inside the status pill */
+    .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
 
     .pill-green { background: var(--green-dim); border-color: rgba(0,214,143,0.3); color: var(--green); }
     .pill-green .dot { background: var(--green); animation: blink 2s infinite; }
-    .pill-red    { background: var(--red-dim);   border-color: rgba(255,77,106,0.3);  color: var(--red); }
-    .pill-red .dot { background: var(--red); }
-    .pill-amber  { background: var(--amber-dim); border-color: rgba(255,181,71,0.3);  color: var(--amber); }
+    .pill-red   { background: var(--red-dim);   border-color: rgba(255,77,106,0.3); color: var(--red); }
+    .pill-red   .dot { background: var(--red); }
+    .pill-amber { background: var(--amber-dim); border-color: rgba(255,181,71,0.3); color: var(--amber); }
     .pill-amber .dot { background: var(--amber); animation: blink 1s infinite; }
 
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    /* Keyframe: pulses the dot opacity to simulate a live indicator */
+    @keyframes blink { 0%,100%{ opacity:1 } 50%{ opacity:0.3 } }
 
-    /* ── STATS GRID ── */
+    /*
+      STATS GRID
+      Four equal-width cards showing total / passed / failed / success rate.
+      Collapses to 2 columns on mobile via the responsive block below.
+    */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 1rem; margin-bottom: 1.5rem;
     }
 
+    /*
+      STAT CARD
+      Individual metric card. The ::before pseudo-element renders a 2px coloured
+      gradient line at the top — colour is set by the accent modifier class.
+    */
     .stat-card {
-      background: var(--bg3);
-      border: 1px solid var(--border);
+      background: var(--bg3); border: 1px solid var(--border);
       border-radius: 12px; padding: 1.25rem;
       position: relative; overflow: hidden;
       transition: border-color 0.2s, transform 0.2s;
     }
-
     .stat-card:hover { border-color: var(--border2); transform: translateY(-2px); }
-
     .stat-card::before {
       content: ''; position: absolute;
       top: 0; left: 0; right: 0; height: 2px;
     }
-
-    .stat-card.blue-accent::before  { background: linear-gradient(90deg, var(--blue), transparent); }
+    .stat-card.blue-accent::before  { background: linear-gradient(90deg, var(--blue),  transparent); }
     .stat-card.green-accent::before { background: linear-gradient(90deg, var(--green), transparent); }
-    .stat-card.red-accent::before   { background: linear-gradient(90deg, var(--red), transparent); }
+    .stat-card.red-accent::before   { background: linear-gradient(90deg, var(--red),   transparent); }
     .stat-card.amber-accent::before { background: linear-gradient(90deg, var(--amber), transparent); }
 
-    .stat-label {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem; color: var(--muted);
-      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem;
-    }
+    .stat-label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+    .stat-value { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+    .stat-value.blue  { color: var(--blue);  }
+    .stat-value.green { color: var(--green); }
+    .stat-value.red   { color: var(--red);   }
+    .stat-value.amber { color: var(--amber); }
+    .stat-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
 
-    .stat-value {
-      font-size: 2.25rem; font-weight: 700;
-      letter-spacing: -0.03em; line-height: 1;
-    }
-
-    .stat-value.blue   { color: var(--blue); }
-    .stat-value.green  { color: var(--green); }
-    .stat-value.red    { color: var(--red); }
-    .stat-value.amber  { color: var(--amber); }
-
-    .stat-sub {
-      font-size: 0.75rem; color: var(--muted);
-      margin-top: 4px;
-    }
-
-    /* ── SECTIONS ── */
-    .section {
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 12px; padding: 1.25rem;
-      margin-bottom: 1rem;
-    }
-
-    .section-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 1rem;
-    }
-
-    .section-title {
-      font-size: 0.85rem; font-weight: 600; color: var(--text);
-      display: flex; align-items: center; gap: 0.5rem;
-    }
-
+    /*
+      SECTION CARD
+      Reusable container used for build history, recent runs, and AI summary.
+      Each section has a header row (title + meta label) and variable content.
+    */
+    .section { background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .section-title  { font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
     .section-title .icon { font-size: 0.9rem; }
+    .section-meta   { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--muted); }
 
-    .section-meta {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem; color: var(--muted);
-    }
-
-    /* ── BAR CHART ── */
-    .bar-chart {
-      display: flex; align-items: flex-end;
-      gap: 4px; height: 72px; margin-top: 0.5rem;
-    }
-
+    /*
+      BUILD HISTORY BAR CHART
+      A row of coloured <div> bars, each representing one pipeline run.
+      Green (pass) bars are rendered tall, red (fail) bars short, via JS.
+      The bars flex to fill the container width evenly.
+    */
+    .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 72px; margin-top: 0.5rem; }
     .bar {
-      flex: 1; border-radius: 3px 3px 0 0;
-      min-height: 6px; cursor: pointer;
+      flex: 1; border-radius: 3px 3px 0 0; min-height: 6px; cursor: pointer;
       transition: opacity 0.2s, transform 0.2s;
-      position: relative;
     }
-
     .bar:hover { opacity: 0.8; transform: scaleY(1.05); transform-origin: bottom; }
     .bar.pass { background: linear-gradient(to top, #00a86b, var(--green)); }
     .bar.fail { background: linear-gradient(to top, #cc1f3c, var(--red)); }
     .bar.skip { background: var(--border2); }
 
-    /* ── RUN ROWS ── */
+    /*
+      RECENT RUNS LIST
+      Each row uses a CSS grid with four columns: name, branch, badge, time.
+      A subtle hover highlight is achieved by negative margin + matching padding trick.
+    */
     .run-row {
-      display: grid;
-      grid-template-columns: 1fr auto auto auto;
+      display: grid; grid-template-columns: 1fr auto auto auto;
       align-items: center; gap: 1rem;
-      padding: 0.65rem 0;
-      border-bottom: 1px solid var(--border);
+      padding: 0.65rem 0; border-bottom: 1px solid var(--border);
       transition: background 0.15s;
     }
-
     .run-row:last-child { border-bottom: none; }
     .run-row:hover { background: rgba(255,255,255,0.02); margin: 0 -1.25rem; padding: 0.65rem 1.25rem; border-radius: 6px; }
 
-    .run-name {
-      font-size: 0.85rem; color: var(--text);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
+    .run-name   { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .run-branch { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--muted); background: var(--bg4); border: 1px solid var(--border); padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+    .run-badge  { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+    .run-time   { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--muted); white-space: nowrap; }
 
-    .run-branch {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem; color: var(--muted);
-      background: var(--bg4); border: 1px solid var(--border);
-      padding: 2px 8px; border-radius: 4px;
-      white-space: nowrap;
-    }
+    /* Pass / fail / running badge colour variants */
+    .rb-pass { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,214,143,0.25); }
+    .rb-fail { background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(255,77,106,0.25); }
+    .rb-run  { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,181,71,0.25); }
 
-    .run-badge {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem; font-weight: 600;
-      padding: 3px 10px; border-radius: 20px;
-      white-space: nowrap;
-    }
-
-    .rb-pass   { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,214,143,0.25); }
-    .rb-fail   { background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(255,77,106,0.25); }
-    .rb-run    { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,181,71,0.25); }
-
-    .run-time {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem; color: var(--muted);
-      white-space: nowrap;
-    }
-
-    /* ── AI SUMMARY ── */
+    /*
+      AI HEALTH SUMMARY BOX
+      A blue-tinted box inside the AI summary section.
+      The gradient background and coloured border give it a distinct "AI" feel.
+    */
     .ai-summary-box {
       background: linear-gradient(135deg, rgba(77,159,255,0.05), rgba(0,214,143,0.03));
       border: 1px solid rgba(77,159,255,0.2);
       border-radius: 10px; padding: 1rem;
     }
+    .ai-summary-label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 600; color: var(--blue); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem; }
+    .ai-summary-text  { font-size: 0.875rem; line-height: 1.7; color: var(--muted2); }
 
-    .ai-summary-label {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem; font-weight: 600;
-      color: var(--blue); text-transform: uppercase;
-      letter-spacing: 0.1em; margin-bottom: 0.5rem;
-      display: flex; align-items: center; gap: 0.4rem;
-    }
-
-    .ai-summary-text {
-      font-size: 0.875rem; line-height: 1.7; color: var(--muted2);
-    }
-
-    /* ── FOOTER ── */
-    footer {
-      text-align: center; margin-top: 2rem;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem; color: var(--muted);
-      padding-top: 1.5rem; border-top: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center; gap: 1rem;
-    }
-
+    /*
+      FOOTER
+      Centred row of links and labels separated by small dot dividers.
+    */
+    footer { text-align: center; margin-top: 2rem; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--muted); padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; }
     footer a { color: var(--blue); text-decoration: none; }
     footer a:hover { color: var(--text); }
-
     .footer-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--border2); }
 
-    .loading {
-      color: var(--muted); font-size: 0.85rem;
-      display: flex; align-items: center; gap: 0.5rem;
-    }
+    /* Generic loading text used while async data is being fetched */
+    .loading { color: var(--muted); font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; }
 
-    /* ── TIPS BUTTON ── */
+    /*
+      FLOATING TIPS BUTTON
+      Fixed to the bottom-right corner. Amber border and glow to stand out.
+      Rotates slightly on hover for a playful feel.
+      z-index 9999 keeps it above all other page content.
+    */
     #tips-btn {
       position: fixed; bottom: 1.75rem; right: 1.75rem;
       width: 52px; height: 52px; border-radius: 50%;
-      background: var(--bg3);
-      border: 1px solid var(--amber);
+      background: var(--bg3); border: 1px solid var(--amber);
       font-size: 1.3rem; cursor: pointer;
       z-index: 9999; pointer-events: all;
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 0 20px rgba(255,181,71,0.2), 0 4px 16px rgba(0,0,0,0.4);
       transition: transform 0.2s, box-shadow 0.2s;
     }
+    #tips-btn:hover { transform: scale(1.1) rotate(-5deg); box-shadow: 0 0 32px rgba(255,181,71,0.4), 0 8px 24px rgba(0,0,0,0.4); }
 
-    #tips-btn:hover {
-      transform: scale(1.1) rotate(-5deg);
-      box-shadow: 0 0 32px rgba(255,181,71,0.4), 0 8px 24px rgba(0,0,0,0.4);
-    }
-
-    /* ── TIPS OVERLAY ── */
+    /*
+      TIPS OVERLAY
+      Full-screen dark backdrop that appears behind the modal.
+      Hidden by default (display:none); the .open class switches it to flex
+      to centre the modal both horizontally and vertically.
+      backdrop-filter: blur gives a frosted-glass effect on the page behind.
+    */
     #tips-overlay {
       display: none; position: fixed; inset: 0;
       background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
-      z-index: 99999; align-items: center; justify-content: center;
-      padding: 1rem;
+      z-index: 99999; align-items: center; justify-content: center; padding: 1rem;
     }
-
     #tips-overlay.open { display: flex; }
 
-    /* ── TIPS MODAL ── */
+    /*
+      TIPS MODAL
+      The actual popup card. Spring-like popIn animation uses a cubic-bezier
+      curve that overshoots slightly (1.56) for a bouncy entrance.
+    */
     #tips-modal {
-      background: var(--bg2);
-      border: 1px solid var(--border2);
-      border-radius: 16px; width: 100%; max-width: 480px;
-      overflow: hidden;
+      background: var(--bg2); border: 1px solid var(--border2);
+      border-radius: 16px; width: 100%; max-width: 480px; overflow: hidden;
       animation: popIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       box-shadow: 0 24px 64px rgba(0,0,0,0.6);
     }
+    @keyframes popIn { from { opacity:0; transform:scale(0.88) translateY(16px); } to { opacity:1; transform:scale(1) translateY(0); } }
 
-    @keyframes popIn {
-      from { opacity: 0; transform: scale(0.88) translateY(16px); }
-      to   { opacity: 1; transform: scale(1) translateY(0); }
-    }
-
-    #tips-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--border);
-      background: linear-gradient(135deg, rgba(255,181,71,0.05), transparent);
-    }
-
-    #tips-badge {
-      display: block;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem; font-weight: 700;
-      color: var(--amber); text-transform: uppercase; letter-spacing: 0.12em;
-      margin-bottom: 3px;
-    }
-
-    #tips-subtitle {
-      font-size: 0.75rem; color: var(--muted);
-    }
-
-    #tips-close {
-      background: var(--bg4); border: 1px solid var(--border);
-      color: var(--muted); font-size: 0.8rem; cursor: pointer;
-      width: 28px; height: 28px; border-radius: 6px;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.15s;
-    }
-
+    /* Modal header: badge label + subtitle on the left, close button on the right */
+    #tips-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, rgba(255,181,71,0.05), transparent); }
+    #tips-badge    { display: block; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 700; color: var(--amber); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 3px; }
+    #tips-subtitle { font-size: 0.75rem; color: var(--muted); }
+    #tips-close    { background: var(--bg4); border: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; cursor: pointer; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
     #tips-close:hover { background: var(--border2); color: var(--text); }
 
-    #tips-body {
-      padding: 1.5rem 1.25rem; min-height: 130px;
-      display: flex; align-items: center;
-    }
-
+    /* Modal body: holds the spinner (loading state) and tip text (loaded state) */
+    #tips-body    { padding: 1.5rem 1.25rem; min-height: 130px; display: flex; align-items: center; }
     #tips-content { width: 100%; }
+    #tips-loading { display: flex; align-items: center; gap: 0.75rem; color: var(--muted); font-size: 0.875rem; }
 
-    #tips-loading {
-      display: flex; align-items: center; gap: 0.75rem;
-      color: var(--muted); font-size: 0.875rem;
-    }
-
-    .spinner {
-      width: 18px; height: 18px; flex-shrink: 0;
-      border: 2px solid var(--border2);
-      border-top-color: var(--amber);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
-
+    /*
+      LOADING SPINNER
+      A CSS-only circular spinner. border-top-color is amber so only one
+      segment of the circle is visible, creating the rotating arc effect.
+    */
+    .spinner { width: 18px; height: 18px; flex-shrink: 0; border: 2px solid var(--border2); border-top-color: var(--amber); border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    #tips-text {
-      font-size: 0.9rem; line-height: 1.75;
-      color: var(--text); display: none;
-    }
+    #tips-text         { font-size: 0.9rem; line-height: 1.75; color: var(--text); display: none; }
+    #tips-text strong  { color: var(--amber); font-weight: 600; }
 
-    #tips-text strong { color: var(--amber); font-weight: 600; }
-
-    #tips-footer {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0.875rem 1.25rem;
-      border-top: 1px solid var(--border);
-      background: var(--bg3);
-    }
-
-    #tips-refresh {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.7rem; background: none;
-      border: 1px solid var(--border2); color: var(--muted);
-      padding: 5px 14px; border-radius: 6px; cursor: pointer;
-      transition: all 0.2s; display: flex; align-items: center; gap: 0.4rem;
-    }
-
+    /* Modal footer: refresh button on the left, topic label on the right */
+    #tips-footer  { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1.25rem; border-top: 1px solid var(--border); background: var(--bg3); }
+    #tips-refresh { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; background: none; border: 1px solid var(--border2); color: var(--muted); padding: 5px 14px; border-radius: 6px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 0.4rem; }
     #tips-refresh:hover { border-color: var(--amber); color: var(--amber); }
+    #tips-topic   { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; max-width: 180px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    #tips-topic {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.6rem; color: var(--muted);
-      text-transform: uppercase; letter-spacing: 0.08em;
-      max-width: 180px; text-align: right;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-
-    /* ── RESPONSIVE ── */
+    /*
+      RESPONSIVE BREAKPOINTS
+      700px: stats collapse to 2 columns, timestamp column hidden in run rows.
+      400px: further reduce padding for very small screens.
+    */
     @media (max-width: 700px) {
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
-      .run-row { grid-template-columns: 1fr auto auto; }
-      .run-time { display: none; }
-      header { flex-direction: column; }
+      .run-row    { grid-template-columns: 1fr auto auto; }
+      .run-time   { display: none; }
+      header      { flex-direction: column; }
     }
-
     @media (max-width: 400px) {
       .stats-grid { grid-template-columns: 1fr 1fr; }
-      .page { padding: 1rem; }
+      .page       { padding: 1rem; }
     }
 
-    /* ── FADE IN ANIMATION ── */
-    .fade-up {
-      opacity: 0; transform: translateY(12px);
-      animation: fadeUp 0.4s ease forwards;
-    }
+    /*
+      STAT CARD FADE-UP ENTRANCE ANIMATION
+      Each stat card fades in and slides up on page load.
+      nth-child delays stagger the cards so they appear one after another.
+    */
+    .fade-up { opacity: 0; transform: translateY(12px); animation: fadeUp 0.4s ease forwards; }
     .fade-up:nth-child(1) { animation-delay: 0.05s; }
-    .fade-up:nth-child(2) { animation-delay: 0.1s; }
+    .fade-up:nth-child(2) { animation-delay: 0.1s;  }
     .fade-up:nth-child(3) { animation-delay: 0.15s; }
-    .fade-up:nth-child(4) { animation-delay: 0.2s; }
-
-    @keyframes fadeUp {
-      to { opacity: 1; transform: translateY(0); }
-    }
+    .fade-up:nth-child(4) { animation-delay: 0.2s;  }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
 <div class="page">
 
-  <!-- HEADER -->
+  <!--
+    HEADER
+    Shows the project name, repo path, and a live status pill that turns
+    green/red/amber based on the latest pipeline run conclusion.
+    Updated dynamically by renderStatusPill() in the script.
+  -->
   <header>
     <div class="header-left">
-      <div class="header-icon">⚡</div>
+      <div class="header-icon" aria-hidden="true">⚡</div>
       <div class="header-text">
         <h1>AI DevOps Bot</h1>
         <p>noobstar2306/ai-devops-bot · pipeline dashboard</p>
@@ -458,7 +401,13 @@
     </div>
   </header>
 
-  <!-- STATS -->
+  <!--
+    STATS GRID
+    Four metric cards: total runs, passed, failed, success rate.
+    Each card has a coloured accent line at the top and a trend sub-label.
+    Values are populated by renderStats() in the script.
+    fade-up class triggers the staggered entrance animation on load.
+  -->
   <div class="stats-grid">
     <div class="stat-card blue-accent fade-up">
       <div class="stat-label">Total runs</div>
@@ -482,10 +431,16 @@
     </div>
   </div>
 
-  <!-- BUILD HISTORY -->
+  <!--
+    BUILD HISTORY BAR CHART
+    A visual row of coloured bars — one per pipeline run (last 30).
+    Green = passed, red = failed, grey = in progress.
+    Bars are created dynamically by renderBarChart() in the script.
+    The chart-meta span shows how many runs are displayed.
+  -->
   <div class="section">
     <div class="section-header">
-      <div class="section-title"><span class="icon">📊</span> Build history</div>
+      <div class="section-title"><span class="icon" aria-hidden="true">📊</span> Build history</div>
       <span class="section-meta" id="chart-meta">last 30 runs</span>
     </div>
     <div class="bar-chart" id="bar-chart">
@@ -493,19 +448,29 @@
     </div>
   </div>
 
-  <!-- RECENT RUNS -->
+  <!--
+    RECENT RUNS LIST
+    A table-like list of the 10 most recent pipeline runs.
+    Each row shows: commit title, branch name, pass/fail badge, and timestamp.
+    Rows are created dynamically by renderRunList() in the script.
+  -->
   <div class="section">
     <div class="section-header">
-      <div class="section-title"><span class="icon">🔄</span> Recent runs</div>
+      <div class="section-title"><span class="icon" aria-hidden="true">🔄</span> Recent runs</div>
       <span class="section-meta">latest 10</span>
     </div>
     <div id="runs-list"><span class="loading">⏳ Loading pipeline runs...</span></div>
   </div>
 
-  <!-- AI HEALTH SUMMARY -->
+  <!--
+    AI HEALTH SUMMARY
+    A plain-English summary of pipeline health generated from the run data.
+    Four tiers: excellent, healthy, needs review, critical.
+    Text is set by renderHealthSummary() in the script — no AI API call needed.
+  -->
   <div class="section">
     <div class="section-header">
-      <div class="section-title"><span class="icon">🤖</span> AI health summary</div>
+      <div class="section-title"><span class="icon" aria-hidden="true">🤖</span> AI health summary</div>
     </div>
     <div class="ai-summary-box">
       <div class="ai-summary-label">✦ pipeline intelligence</div>
@@ -513,69 +478,132 @@
     </div>
   </div>
 
-  <!-- FOOTER -->
+  <!--
+    FOOTER
+    Links to the source repo and the portfolio site.
+    Separated by small dot dividers for a clean minimal layout.
+  -->
   <footer>
     <span>Built with GitHub Actions</span>
-    <span class="footer-dot"></span>
+    <span class="footer-dot" aria-hidden="true"></span>
     <span>Gemini AI</span>
-    <span class="footer-dot"></span>
-    <a href="https://github.com/noobstar2306/ai-devops-bot" target="_blank">View source ↗</a>
-    <span class="footer-dot"></span>
-    <a href="https://noobstar2306.github.io" target="_blank">Portfolio ↗</a>
+    <span class="footer-dot" aria-hidden="true"></span>
+    <a href="https://github.com/noobstar2306/ai-devops-bot" target="_blank" rel="noopener">View source ↗</a>
+    <span class="footer-dot" aria-hidden="true"></span>
+    <a href="https://noobstar2306.github.io" target="_blank" rel="noopener">Portfolio ↗</a>
   </footer>
 
-</div>
+</div><!-- /.page -->
 
-<!-- TIPS BUTTON -->
-<button id="tips-btn" title="Get an AI DevOps tip">💡</button>
+<!--
+  FLOATING TIPS BUTTON
+  Fixed amber button in the bottom-right corner.
+  Clicking it opens the tips modal and fetches a fresh AI tip from Gemini.
+  aria-label provides accessible text since the button only shows an emoji.
+-->
+<button id="tips-btn" type="button" aria-label="Get an AI DevOps tip" title="AI DevOps Tips">💡</button>
 
-<!-- TIPS MODAL -->
-<div id="tips-overlay">
+<!--
+  TIPS MODAL
+  Dialog that shows a randomly selected AI-generated DevOps tip.
+  Structure: overlay (backdrop) > modal > header / body / footer.
+  - header: category badge, subtitle, close button
+  - body:   spinner (loading) OR tip text (loaded)
+  - footer: refresh button, topic label
+  Opened by openTips(), closed by closeTips().
+  role="dialog" and aria-modal improve screen-reader accessibility.
+-->
+<div id="tips-overlay" role="dialog" aria-modal="true" aria-labelledby="tips-badge">
   <div id="tips-modal">
     <div id="tips-header">
       <div>
         <span id="tips-badge">Did you know?</span>
         <span id="tips-subtitle">AI DevOps Tips — powered by Gemini</span>
       </div>
-      <button id="tips-close">✕</button>
+      <button id="tips-close" type="button" aria-label="Close tips">✕</button>
     </div>
     <div id="tips-body">
       <div id="tips-content">
-        <div id="tips-loading"><div class="spinner"></div><span>Generating tip...</span></div>
+        <div id="tips-loading"><div class="spinner" aria-hidden="true"></div><span>Generating tip...</span></div>
         <div id="tips-text"></div>
       </div>
     </div>
     <div id="tips-footer">
-      <button id="tips-refresh">↻ New tip</button>
+      <button id="tips-refresh" type="button">↻ New tip</button>
       <span id="tips-topic"></span>
     </div>
   </div>
 </div>
 
 <script>
-const REPO = "noobstar2306/ai-devops-bot";
-const GEMINI_KEY = "PASTE_YOUR_GEMINI_KEY_HERE";
+  // ── CONFIGURATION ──
+  // REPO:       the GitHub repository to pull pipeline run data from.
+  // GEMINI_KEY: your Gemini API key from aistudio.google.com.
+  //             Replace the placeholder — do NOT commit a real key to a public repo.
+  const REPO       = "noobstar2306/ai-devops-bot";
+  const GEMINI_KEY = "PASTE_YOUR_GEMINI_KEY_HERE";
 
-// ── Dashboard ──
-async function loadRuns() {
-  try {
-    const res  = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=100`);
-    const data = await res.json();
-    const runs = data.workflow_runs || [];
+  // ── TIPS DATA ──
+  // Arrays of category labels and DevOps topics.
+  // A random pair is selected each time the user opens or refreshes the modal.
+  const CATEGORIES = ['Did you know?', 'Pro tip', 'Quick fact', 'Best practice', 'Fun fact'];
+  const TOPICS = [
+    'GitHub Actions CI/CD pipelines', 'AI in DevOps and AIOps',
+    'Docker and containerization',    'Kubernetes and orchestration',
+    'DevSecOps security practices',   'Python automation for DevOps',
+    'Monitoring and observability',   'Git best practices',
+    'Infrastructure as Code with Terraform', 'LLM APIs in developer workflows'
+  ];
 
-    const total  = runs.length;
-    const passed = runs.filter(r => r.conclusion === "success").length;
-    const failed = runs.filter(r => r.conclusion === "failure").length;
-    const rate   = total ? Math.round((passed / total) * 100) : 0;
+  // ── loadRuns ──
+  // Entry point called on page load. Fetches up to 100 workflow runs from the
+  // GitHub API, calculates summary stats, then delegates rendering to helper
+  // functions. Shows an error message in the run list if the fetch fails.
+  async function loadRuns() {
+    try {
+      const res  = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=100`);
+      const data = await res.json();
+      const runs = data.workflow_runs || [];
 
+      // Compute summary statistics used by multiple render functions
+      const total  = runs.length;
+      const passed = runs.filter(r => r.conclusion === "success").length;
+      const failed = runs.filter(r => r.conclusion === "failure").length;
+      const rate   = total ? Math.round((passed / total) * 100) : 0;
+
+      renderStats(total, passed, failed, rate);
+      renderStatusPill(runs);
+      renderBarChart(runs);
+      renderRunList(runs);
+      renderHealthSummary(runs, total, failed, rate);
+
+    } catch (err) {
+      document.getElementById("runs-list").innerHTML =
+        `<span class="loading">Could not load runs: ${err.message}</span>`;
+    }
+  }
+
+  // ── renderStats ──
+  // Populates the four stat cards with total / passed / failed / success rate.
+  // Also sets the trend sub-label: "healthy ✓", "needs review", or "critical"
+  // based on three tiers of the success rate.
+  function renderStats(total, passed, failed, rate) {
     document.getElementById("stat-total").textContent  = total;
     document.getElementById("stat-passed").textContent = passed;
     document.getElementById("stat-failed").textContent = failed;
     document.getElementById("stat-rate").textContent   = rate + "%";
-    document.getElementById("stat-trend").textContent  = rate >= 80 ? "healthy ✓" : rate >= 50 ? "needs review" : "critical";
+    document.getElementById("stat-trend").textContent  =
+      rate >= 80 ? "healthy ✓" : rate >= 50 ? "needs review" : "critical";
+  }
 
+  // ── renderStatusPill ──
+  // Updates the header status pill colour and label based on the conclusion
+  // of the most recent pipeline run (runs[0]).
+  // Three states: green "All systems go" / red "Build failed" / amber "Running".
+  function renderStatusPill(runs) {
     const status = document.getElementById("overall-status");
     const latest = runs[0]?.conclusion;
+
     if (latest === "success") {
       status.className = "status-pill pill-green";
       status.innerHTML = '<span class="dot"></span>All systems go';
@@ -586,29 +614,51 @@ async function loadRuns() {
       status.className = "status-pill pill-amber";
       status.innerHTML = '<span class="dot"></span>Running';
     }
+  }
 
-    // Bar chart — last 30 runs
-    const chart = document.getElementById("bar-chart");
+  // ── renderBarChart ──
+  // Builds the build history bar chart using the last 30 runs, reversed so
+  // the oldest run appears on the left and newest on the right.
+  // Pass bars use a randomised height of 85–100% for visual variation.
+  // Fail bars use 20–60% to make failures visually shorter and distinct.
+  // Each bar gets a tooltip (title) showing the commit name and conclusion.
+  function renderBarChart(runs) {
+    const chart    = document.getElementById("bar-chart");
     chart.innerHTML = "";
+
     const chartRuns = runs.slice(0, 30).reverse();
     document.getElementById("chart-meta").textContent = `last ${chartRuns.length} runs`;
+
     chartRuns.forEach(r => {
       const bar = document.createElement("div");
-      const pct = r.conclusion === "success" ? 85 + Math.random() * 15 : 20 + Math.random() * 40;
-      bar.className = `bar ${r.conclusion === "success" ? "pass" : r.conclusion === "failure" ? "fail" : "skip"}`;
+      const pct = r.conclusion === "success"
+        ? 85 + Math.random() * 15   // pass: tall bar
+        : 20 + Math.random() * 40;  // fail: short bar
+
+      bar.className  = `bar ${r.conclusion === "success" ? "pass" : r.conclusion === "failure" ? "fail" : "skip"}`;
       bar.style.height = `${pct}%`;
-      bar.title = `${r.display_title} — ${r.conclusion || "in progress"}`;
+      bar.title      = `${r.display_title} — ${r.conclusion || "in progress"}`;
       chart.appendChild(bar);
     });
+  }
 
-    // Recent runs — last 10
+  // ── renderRunList ──
+  // Builds the recent runs table showing the 10 most recent pipeline runs.
+  // Each row is a CSS grid with: commit title, branch pill, status badge, timestamp.
+  // Conclusion is mapped to a CSS class (rb-pass / rb-fail / rb-run) and display text.
+  // Timestamp is formatted as "25 May, 09:30" using the en-IN locale.
+  function renderRunList(runs) {
     const list = document.getElementById("runs-list");
     list.innerHTML = "";
+
     runs.slice(0, 10).forEach(r => {
       const c  = r.conclusion || "in_progress";
       const bc = c === "success" ? "rb-pass" : c === "failure" ? "rb-fail" : "rb-run";
       const bt = c === "success" ? "✓ passed" : c === "failure" ? "✗ failed" : "⟳ running";
-      const t  = new Date(r.created_at).toLocaleDateString("en-IN", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" });
+      const t  = new Date(r.created_at).toLocaleDateString("en-IN", {
+        day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+      });
+
       const row = document.createElement("div");
       row.className = "run-row";
       row.innerHTML = `
@@ -619,85 +669,134 @@ async function loadRuns() {
       `;
       list.appendChild(row);
     });
+  }
 
-    // AI summary
-    const el = document.getElementById("ai-summary-text");
+  // ── renderHealthSummary ──
+  // Writes a plain-English pipeline health message based on the success rate.
+  // Four tiers: 100% excellent, ≥80% healthy, ≥50% needs review, <50% critical.
+  // Appends a specific note about the latest build conclusion at the end.
+  function renderHealthSummary(runs, total, failed, rate) {
+    const el     = document.getElementById("ai-summary-text");
+    const latest = runs[0]?.conclusion;
+    let summary  = "";
+
     if (total === 0) {
-      el.textContent = "No pipeline runs yet. Push some code to get started!";
+      summary = "No pipeline runs yet. Push some code to get started!";
     } else if (rate === 100) {
-      el.textContent = `Pipeline in excellent health — all ${total} runs passed. Tests are working perfectly and catching issues before they reach production. Keep it up!`;
+      summary = `Pipeline in excellent health — all ${total} runs passed. Tests are catching issues before they reach production. Keep it up!`;
     } else if (rate >= 80) {
-      el.textContent = `Pipeline is healthy at ${rate}% success rate across ${total} runs. ${failed} run${failed > 1 ? "s" : ""} failed — worth checking for patterns. Overall you're in great shape.`;
+      summary = `Pipeline is healthy at ${rate}% success rate across ${total} runs. ${failed} run${failed > 1 ? "s" : ""} failed — worth checking for patterns. Overall you're in great shape.`;
     } else if (rate >= 50) {
-      el.textContent = `Pipeline at ${rate}% success rate across ${total} runs. ${failed} failures detected — review your test coverage and error handling. Consider checking the AI failure explanations on your PRs.`;
+      summary = `Pipeline at ${rate}% success rate across ${total} runs. ${failed} failures detected — review test coverage and error handling. Check the AI failure explanations on your PRs.`;
     } else {
-      el.textContent = `Pipeline needs attention — ${rate}% success rate across ${total} runs. ${failed} failures recorded. Focus on stabilising tests before adding new features.`;
+      summary = `Pipeline needs attention — ${rate}% success rate across ${total} runs. ${failed} failures recorded. Stabilise failing tests before adding new features.`;
     }
-    if (latest === "failure") el.textContent += " ⚠️ Latest build failed — check the AI explanation on your PR.";
-    else if (latest === "success") el.textContent += " ✅ Latest build is green.";
 
-  } catch (err) {
-    document.getElementById("runs-list").innerHTML = `<span class="loading">Could not load runs: ${err.message}</span>`;
+    // Append a one-liner about the latest build
+    if (latest === "failure") summary += " ⚠️ Latest build failed — check the AI explanation on your PR.";
+    else if (latest === "success") summary += " ✅ Latest build is green.";
+
+    el.textContent = summary;
   }
-}
 
-// ── Tips ──
-const CATEGORIES = ['Did you know?','Pro tip','Quick fact','Best practice','Fun fact'];
-const TOPICS = [
-  'GitHub Actions CI/CD pipelines','AI in DevOps and AIOps',
-  'Docker and containerization','Kubernetes and orchestration',
-  'DevSecOps security practices','Python automation for DevOps',
-  'Monitoring and observability','Git best practices',
-  'Infrastructure as Code with Terraform','LLM APIs in developer workflows'
-];
-
-function openTips()  { document.getElementById('tips-overlay').classList.add('open'); fetchTip(); }
-function closeTips() { document.getElementById('tips-overlay').classList.remove('open'); }
-
-async function fetchTip() {
-  const loading  = document.getElementById('tips-loading');
-  const text     = document.getElementById('tips-text');
-  const badge    = document.getElementById('tips-badge');
-  const topicEl  = document.getElementById('tips-topic');
-  const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
-  const topic    = TOPICS[Math.floor(Math.random() * TOPICS.length)];
-
-  badge.textContent   = category;
-  topicEl.textContent = topic;
-  loading.style.display = 'flex';
-  text.style.display    = 'none';
-  text.innerHTML        = '';
-
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `Give me one "${category}" about: ${topic}. Start with a bold heading using <strong> tags, then 2-3 sentences. Practical for a beginner DevOps engineer. No bullets, no preamble.` }] }]
-        })
-      }
-    );
-    const data    = await res.json();
-    const tipText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not load tip. Try again!';
-    loading.style.display = 'none';
-    text.style.display    = 'block';
-    text.innerHTML        = tipText;
-  } catch(err) {
-    loading.style.display = 'none';
-    text.style.display    = 'block';
-    text.innerHTML        = '<strong>Connection error.</strong> Try clicking New tip.';
+  // ── openTips ──
+  // Shows the tips modal by adding the "open" class to the overlay,
+  // then immediately calls fetchTip() to load a fresh tip from Gemini.
+  function openTips() {
+    document.getElementById('tips-overlay').classList.add('open');
+    fetchTip();
   }
-}
 
-document.getElementById('tips-btn').addEventListener('click', openTips);
-document.getElementById('tips-close').addEventListener('click', closeTips);
-document.getElementById('tips-refresh').addEventListener('click', fetchTip);
-document.getElementById('tips-overlay').addEventListener('click', e => { if (e.target.id === 'tips-overlay') closeTips(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTips(); });
+  // ── closeTips ──
+  // Hides the tips modal by removing the "open" class from the overlay.
+  function closeTips() {
+    document.getElementById('tips-overlay').classList.remove('open');
+  }
 
-loadRuns();
+  // ── fetchTip ──
+  // Picks a random category and topic, shows the loading spinner, then calls
+  // the Gemini API to generate a short DevOps tip.
+  // On success: hides the spinner and renders the tip text as HTML.
+  // On failure: shows a friendly connection error message.
+  async function fetchTip() {
+    // Cache DOM references used in this function
+    const loadingEl = document.getElementById('tips-loading');
+    const textEl    = document.getElementById('tips-text');
+    const badgeEl   = document.getElementById('tips-badge');
+    const topicEl   = document.getElementById('tips-topic');
+
+    // Pick a random category and topic for variety on each open / refresh
+    const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
+    const topic    = TOPICS[Math.floor(Math.random() * TOPICS.length)];
+
+    // Update the modal header with the selected category and topic
+    badgeEl.textContent = category;
+    topicEl.textContent = topic;
+
+    // Show the spinner and clear any previous tip text
+    loadingEl.style.display = 'flex';
+    textEl.style.display    = 'none';
+    textEl.innerHTML        = '';
+
+    try {
+      // POST to the Gemini generateContent endpoint with a structured prompt
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `Give me one "${category}" about: ${topic}.
+Start with a bold heading using <strong> tags, then 2-3 sentences.
+Keep it practical for a beginner DevOps engineer.
+No bullet points. No preamble. Just the tip.`
+              }]
+            }]
+          })
+        }
+      );
+
+      const data = await res.json();
+
+      // Navigate the Gemini response structure: candidates[0].content.parts[0].text
+      const tipText = data.candidates?.[0]?.content?.parts?.[0]?.text
+        || 'Could not load tip. Try again!';
+
+      // Hide spinner and display the tip
+      loadingEl.style.display = 'none';
+      textEl.style.display    = 'block';
+      textEl.innerHTML        = tipText;
+
+    } catch (err) {
+      // Show a friendly error if the network request fails
+      loadingEl.style.display = 'none';
+      textEl.style.display    = 'block';
+      textEl.innerHTML        = '<strong>Connection error.</strong> Try clicking New tip.';
+    }
+  }
+
+  // ── Event listeners ──
+  // Wire up all interactive elements for the tips modal.
+  // All listeners use addEventListener (not onclick attributes) for clean separation.
+  document.getElementById('tips-btn').addEventListener('click', openTips);
+  document.getElementById('tips-close').addEventListener('click', closeTips);
+  document.getElementById('tips-refresh').addEventListener('click', fetchTip);
+
+  // Close modal when user clicks the dark backdrop (outside the modal box)
+  document.getElementById('tips-overlay').addEventListener('click', e => {
+    if (e.target.id === 'tips-overlay') closeTips();
+  });
+
+  // Close modal on Escape key for keyboard accessibility
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeTips();
+  });
+
+  // ── Initialise ──
+  // Start the dashboard by fetching pipeline data as soon as the page loads.
+  loadRuns();
 </script>
 </body>
 </html>

@@ -38,6 +38,7 @@ jobs:
           sed -i "s/PASTE_GEMINI_TIPS_KEY_HERE/${{ secrets.GEMINI_TIPS_KEY }}/g" dashboard/index.html
           sed -i "s/PASTE_GEMINI_TIPS_KEY_HERE/${{ secrets.GEMINI_TIPS_KEY }}/g" widgets.js
           sed -i "s/PASTE_GITHUB_PAT_HERE/${{ secrets.GH_PAT }}/g" widgets.js
+          sed -i "s/PASTE_GEMINI_TIPS_KEY_HERE/${{ secrets.GEMINI_TIPS_KEY }}/g" hobbies.html
 
       - name: Upload site
         uses: actions/upload-pages-artifact@v3

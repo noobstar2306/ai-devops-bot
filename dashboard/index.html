@@ -300,5 +300,178 @@ function generateSummary(total, passed, failed, rate, latest) {
 
 loadRuns();
 </script>
+
+<!-- ── AI TIPS BUTTON ── -->
+<button id="tips-btn" onclick="openTips()" title="Get an AI DevOps tip">💡</button>
+
+<!-- ── AI TIPS MODAL ── -->
+<div id="tips-overlay" onclick="if(event.target===this)closeTips()">
+  <div id="tips-modal">
+    <div id="tips-header">
+      <div id="tips-title">
+        <span id="tips-type-badge">Did you know?</span>
+        <span style="font-size:0.7rem;color:#8b949e;font-family:monospace;">AI DevOps Tips</span>
+      </div>
+      <button onclick="closeTips()" id="tips-close">✕</button>
+    </div>
+    <div id="tips-body">
+      <div id="tips-content">
+        <div id="tips-loading"><div class="spinner"></div><span>Generating tip...</span></div>
+        <div id="tips-text" style="display:none"></div>
+      </div>
+    </div>
+    <div id="tips-footer">
+      <button onclick="fetchTip()" id="tips-refresh">↻ New tip</button>
+      <span id="tips-category"></span>
+    </div>
+  </div>
+</div>
+
+<style>
+  #tips-btn {
+    position: fixed; bottom: 2rem; right: 2rem;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: #161b22; border: 1px solid #21262d;
+    font-size: 1.4rem; cursor: pointer; z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  #tips-btn:hover {
+    border-color: #d29922; transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 28px rgba(210,153,34,0.25);
+  }
+  #tips-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    z-index: 300; align-items: center; justify-content: center;
+  }
+  #tips-overlay.open { display: flex; }
+  #tips-modal {
+    background: #0d1117; border: 1px solid #21262d;
+    border-radius: 16px; width: 90%; max-width: 500px;
+    overflow: hidden; animation: popIn 0.25s ease;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.92) translateY(16px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  #tips-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.25rem; border-bottom: 1px solid #21262d;
+  }
+  #tips-title { display: flex; flex-direction: column; gap: 4px; }
+  #tips-type-badge {
+    font-family: monospace; font-size: 0.7rem; font-weight: 700;
+    color: #d29922; text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  #tips-close {
+    background: none; border: none; color: #8b949e;
+    font-size: 1rem; cursor: pointer; padding: 4px 8px;
+    border-radius: 4px; transition: color 0.2s;
+  }
+  #tips-close:hover { color: #e6edf3; }
+  #tips-body {
+    padding: 1.5rem 1.25rem; min-height: 140px;
+    display: flex; align-items: center;
+  }
+  #tips-content { width: 100%; }
+  #tips-loading {
+    display: flex; align-items: center; gap: 0.75rem;
+    color: #8b949e; font-size: 0.875rem;
+  }
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid #21262d; border-top-color: #d29922;
+    border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #tips-text { font-size: 0.95rem; line-height: 1.75; color: #e6edf3; }
+  #tips-text strong { color: #d29922; font-weight: 600; }
+  #tips-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.875rem 1.25rem; border-top: 1px solid #21262d;
+  }
+  #tips-refresh {
+    font-family: monospace; font-size: 0.75rem;
+    background: none; border: 1px solid #21262d; color: #8b949e;
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all 0.2s;
+  }
+  #tips-refresh:hover { border-color: #d29922; color: #d29922; }
+  #tips-category {
+    font-family: monospace; font-size: 0.65rem;
+    color: #8b949e; text-transform: uppercase; letter-spacing: 0.1em;
+  }
+</style>
+
+<script>
+  const CATEGORIES = ['Did you know?', 'Pro tip', 'Quick fact', 'Best practice', 'Fun fact'];
+  const TOPICS = [
+    'GitHub Actions CI/CD pipelines',
+    'AI in DevOps and AIOps',
+    'Docker and containerization',
+    'Kubernetes and orchestration',
+    'DevSecOps security practices',
+    'Python automation for DevOps',
+    'Monitoring and observability',
+    'Git best practices',
+    'Infrastructure as Code with Terraform',
+    'LLM APIs in developer workflows',
+  ];
+
+  function openTips() {
+    document.getElementById('tips-overlay').classList.add('open');
+    fetchTip();
+  }
+
+  function closeTips() {
+    document.getElementById('tips-overlay').classList.remove('open');
+  }
+
+  async function fetchTip() {
+    const loading  = document.getElementById('tips-loading');
+    const text     = document.getElementById('tips-text');
+    const badge    = document.getElementById('tips-type-badge');
+    const cat      = document.getElementById('tips-category');
+    const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
+    const topic    = TOPICS[Math.floor(Math.random() * TOPICS.length)];
+
+    badge.textContent = category;
+    cat.textContent   = topic;
+    loading.style.display = 'flex';
+    text.style.display    = 'none';
+    text.innerHTML        = '';
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{
+            role: 'user',
+            content: `Give me one "${category}" about: ${topic}.
+Format: Start with a bold heading (use <strong> tags), then 2-3 sentences of insight.
+Keep it practical, specific, and useful for a beginner DevOps engineer.
+No bullet points. No preamble. Just the tip directly.`
+          }]
+        })
+      });
+
+      const data    = await response.json();
+      const tipText = data.content?.[0]?.text || 'Could not load tip. Try again!';
+      loading.style.display = 'none';
+      text.style.display    = 'block';
+      text.innerHTML        = tipText;
+    } catch (err) {
+      loading.style.display = 'none';
+      text.style.display    = 'block';
+      text.innerHTML        = '<strong>Connection error.</strong> Try refreshing the page.';
+    }
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTips(); });
+</script>
 </body>
 </html>

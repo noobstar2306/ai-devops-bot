@@ -23,7 +23,20 @@
   // These placeholders are never committed with real values.
   const GEMINI_KEY  = 'PASTE_GEMINI_TIPS_KEY_HERE';
   const GH_PAT      = 'PASTE_GITHUB_PAT_HERE';
-  const GITHUB_REPO = 'noobstar2306/ai-devops-bot';
+
+  // ── ISSUE ROUTING ──
+  // Defines which GitHub repo each issue type is created in.
+  // bugs + questions  → backend repo (ai-devops-bot) — functional issues
+  // suggestions + improvements → frontend repo (noobstar2306.github.io) — appearance/UX ideas
+  const ISSUE_ROUTING = {
+    bug:         { repo: 'noobstar2306/ai-devops-bot',      label: 'ai-devops-bot',       color: '#4fa3ff' },
+    question:    { repo: 'noobstar2306/ai-devops-bot',      label: 'ai-devops-bot',       color: '#4fa3ff' },
+    suggestion:  { repo: 'noobstar2306/noobstar2306.github.io', label: 'noobstar2306.github.io', color: '#a78bfa' },
+    improvement: { repo: 'noobstar2306/noobstar2306.github.io', label: 'noobstar2306.github.io', color: '#a78bfa' },
+  };
+
+  // README always fetches from the backend repo
+  const README_REPO = 'noobstar2306/ai-devops-bot';
 
   // ── TIPS CONFIGURATION ──
   // Categories and topics for the Gemini prompt.
@@ -259,6 +272,16 @@
               <button class="gp-type-btn" data-type="question" type="button">❓ Question</button>
               <button class="gp-type-btn" data-type="improvement" type="button">✨ Improvement</button>
             </div>
+            <!-- Routing indicator: shows which repo the issue will be created in -->
+            <div id="gp-routing-indicator" style="
+              font-family:'JetBrains Mono',monospace; font-size:0.62rem;
+              padding:5px 10px; border-radius:6px; margin-bottom:1rem;
+              background:rgba(79,163,255,0.08); border:1px solid rgba(79,163,255,0.2);
+              color:#4fa3ff; display:flex; align-items:center; gap:0.5rem;
+            ">
+              <span>→</span>
+              <span id="gp-routing-text">Will be created in: noobstar2306/ai-devops-bot</span>
+            </div>
             <label class="gp-help-label" for="gp-issue-title">Title</label>
             <input id="gp-issue-title" class="gp-input" type="text" placeholder="Short description of the issue..." maxlength="100"/>
             <label class="gp-help-label" for="gp-issue-body">Description</label>
@@ -403,12 +426,21 @@ No bullet points. No preamble. Just the tip directly.`
     document.getElementById('gp-help-overlay').classList.remove('open');
   }
 
-  // Issue type pill selector
+  // Issue type pill selector — updates selection and routing indicator
   document.getElementById('gp-issue-types').addEventListener('click', e => {
     const btn = e.target.closest('.gp-type-btn');
     if (!btn) return;
     document.querySelectorAll('.gp-type-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
+
+    // Update routing indicator to show which repo this issue type goes to
+    const route     = ISSUE_ROUTING[btn.dataset.type] || ISSUE_ROUTING.bug;
+    const indicator = document.getElementById('gp-routing-indicator');
+    const text      = document.getElementById('gp-routing-text');
+    indicator.style.background   = `${route.color}14`;
+    indicator.style.borderColor  = `${route.color}33`;
+    indicator.style.color        = route.color;
+    text.textContent = `Will be created in: ${route.repo}`;
   });
 
   async function submitIssue() {
@@ -427,6 +459,10 @@ No bullet points. No preamble. Just the tip directly.`
     }
 
     const issueType  = typeBtn?.dataset.type || 'bug';
+
+    // Look up which repo this issue type should be created in
+    const route      = ISSUE_ROUTING[issueType] || ISSUE_ROUTING.bug;
+
     const issueTitle = `[${issueType}] ${titleEl.value.trim()}`;
     const issueBody  = `${bodyEl.value.trim() || '_No description provided._'}
 
@@ -439,7 +475,8 @@ No bullet points. No preamble. Just the tip directly.`
     statusEl.style.display = 'none';
 
     try {
-      const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/issues`, {
+      // POST to the routed repo — bug/question → ai-devops-bot, suggestion/improvement → portfolio repo
+      const res = await fetch(`https://api.github.com/repos/${route.repo}/issues`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${GH_PAT}`,
@@ -508,7 +545,7 @@ No bullet points. No preamble. Just the tip directly.`
     const bodyEl = document.getElementById('gp-readme-body');
     try {
       const res  = await fetch(
-        `https://api.github.com/repos/${GITHUB_REPO}/readme`,
+        `https://api.github.com/repos/${README_REPO}/readme`,
         { headers: { 'Accept': 'application/vnd.github+json' } }
       );
       const data = await res.json();

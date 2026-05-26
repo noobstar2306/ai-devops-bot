@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Ganesh Putran — hobbies and interests: music, travel, tech, books, gaming."/>
+  <title>Ganesh Putran — Hobbies &amp; Interests</title>
+
+  <!--
+    FONTS
+    Same font stack as the dashboard and portfolio for visual consistency.
+    JetBrains Mono for code/label elements, Outfit for body text.
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /*
+      DESIGN TOKENS
+      Same colour palette as the dashboard so the two pages feel like
+      one coherent product. "-dim" = semi-transparent version for backgrounds.
+    */
+    :root {
+      --bg:        #060810;
+      --bg2:       #0c0f18;
+      --bg3:       #111520;
+      --bg4:       #161c2d;
+      --border:    #1e2538;
+      --border2:   #252d42;
+      --text:      #e2e8f8;
+      --muted:     #6b7894;
+      --muted2:    #8892aa;
+      --green:     #00d68f;
+      --green-dim: rgba(0,214,143,0.12);
+      --red:       #ff4d6a;
+      --blue:      #4d9fff;
+      --blue-dim:  rgba(77,159,255,0.12);
+      --amber:     #ffb547;
+      --amber-dim: rgba(255,181,71,0.12);
+      --purple:    #a78bfa;
+      --purple-dim:rgba(167,139,250,0.12);
+      --teal:      #2dd4bf;
+      --teal-dim:  rgba(45,212,191,0.12);
+      --pink:      #f472b6;
+      --pink-dim:  rgba(244,114,182,0.12);
+    }
+
+    /* ── RESET ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    a    { text-decoration: none; color: inherit; }
+    button { border: none; background: none; cursor: pointer; font: inherit; }
+
+    /* ── BASE BODY ── */
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /*
+      GRID BACKGROUND
+      Same subtle dot-grid as the dashboard for visual continuity.
+    */
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(77,159,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(77,159,255,0.025) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* Ambient blue glow centred at top */
+    body::after {
+      content: ''; position: fixed;
+      top: -200px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 400px;
+      background: radial-gradient(ellipse, rgba(77,159,255,0.06) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── PAGE WRAPPER ── */
+    .page {
+      position: relative; z-index: 1;
+      max-width: 1100px; margin: 0 auto; padding: 2rem;
+    }
+
+    /*
+      HEADER
+      Same structure as the dashboard header — icon, title, subtitle, nav links.
+    */
+    header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 2.5rem; padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap; gap: 1rem;
+    }
+    .header-left  { display: flex; align-items: center; gap: 1rem; }
+    .header-icon  {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--purple-dim), var(--pink-dim));
+      border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+    .header-text h1 { font-size: 1.2rem; font-weight: 600; letter-spacing: -0.02em; }
+    .header-text p  { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+    .header-right   { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
+    /* Back link to dashboard */
+    .back-link {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+      color: var(--muted); border: 1px solid var(--border);
+      padding: 5px 14px; border-radius: 20px;
+      transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .back-link:hover { color: var(--blue); border-color: var(--blue); }
+
+    /*
+      HOBBY SECTION
+      Each hobby gets its own full-width section card with a coloured
+      left border accent, header row, static content, and an AI insight box.
+    */
+    .hobby-section {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 14px; margin-bottom: 1.25rem;
+      overflow: hidden; transition: border-color 0.2s;
+    }
+    .hobby-section:hover { border-color: var(--border2); }
+
+    /*
+      HOBBY HEADER
+      Clickable row that expands/collapses the section content.
+      Contains: coloured icon, title, tag pills, and expand arrow.
+    */
+    .hobby-header {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 1.25rem 1.5rem; cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .hobby-header:hover { background: rgba(255,255,255,0.02); }
+
+    .hobby-icon {
+      width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
+      border: 1px solid var(--border2);
+    }
+
+    .hobby-title-group { flex: 1; }
+    .hobby-title { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+    .hobby-subtitle { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--muted); }
+
+    .hobby-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-left: auto; margin-right: 1rem; }
+    .h-tag {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+      padding: 3px 9px; border-radius: 999px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border2); color: var(--muted);
+    }
+
+    /* Expand/collapse chevron arrow */
+    .hobby-arrow {
+      font-size: 0.75rem; color: var(--muted);
+      transition: transform 0.25s;
+    }
+    .hobby-section.open .hobby-arrow { transform: rotate(180deg); }
+
+    /*
+      HOBBY BODY
+      Collapsible content area. Hidden by default; .open class reveals it.
+      Contains two columns: static items list + AI insight box.
+    */
+    .hobby-body {
+      display: none; padding: 1.5rem;
+      gap: 1.5rem;
+    }
+    .hobby-section.open .hobby-body { display: grid; grid-template-columns: 1fr 1fr; }
+
+    /*
+      STATIC CONTENT COLUMN
+      Left side: list of favourite items (albums, books, games etc.)
+      with a small coloured dot before each entry.
+    */
+    .hobby-items h4 {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+      text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted);
+      margin-bottom: 0.85rem;
+    }
+    .hobby-item {
+      display: flex; align-items: flex-start; gap: 0.65rem;
+      padding: 0.5rem 0; border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+    }
+    .hobby-item:last-child { border-bottom: none; }
+    .hobby-item .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+    .hobby-item .item-main  { font-weight: 500; }
+    .hobby-item .item-sub   { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+    /*
+      AI INSIGHT BOX
+      Right side: Gemini-generated personalised insight or recommendation.
+      Shows a spinner while loading, then the AI response as HTML.
+      Each hobby has its own distinct colour accent.
+    */
+    .ai-box {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1.25rem;
+      display: flex; flex-direction: column; gap: 0.75rem;
+    }
+
+    .ai-box-header {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .ai-box-label {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em;
+    }
+
+    /* Refresh button inside the AI box */
+    .ai-refresh {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+      color: var(--muted); border: 1px solid var(--border);
+      padding: 4px 10px; border-radius: 6px; transition: all 0.2s;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .ai-refresh:hover { color: var(--amber); border-color: var(--amber); }
+
+    .ai-box-text {
+      font-size: 0.875rem; line-height: 1.75; color: var(--muted2);
+      min-height: 60px;
+    }
+    .ai-box-text strong { color: var(--text); }
+
+    /* Loading state inside the AI box */
+    .ai-loading {
+      display: flex; align-items: center; gap: 0.6rem;
+      color: var(--muted); font-size: 0.875rem;
+    }
+
+    /* CSS-only spinning arc */
+    .spinner {
+      width: 16px; height: 16px; flex-shrink: 0;
+      border: 2px solid var(--border2);
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /*
+      COLOUR MODIFIERS FOR EACH HOBBY
+      Each hobby section has a unique accent colour applied via a modifier
+      class on the icon background, AI label, spinner top colour, and dot.
+    */
+    .c-music  .hobby-icon { background: var(--purple-dim); }
+    .c-music  .ai-box-label { color: var(--purple); }
+    .c-music  .spinner { border-top-color: var(--purple); }
+    .c-music  .dot { background: var(--purple); }
+
+    .c-travel .hobby-icon { background: var(--teal-dim); }
+    .c-travel .ai-box-label { color: var(--teal); }
+    .c-travel .spinner { border-top-color: var(--teal); }
+    .c-travel .dot { background: var(--teal); }
+
+    .c-tech   .hobby-icon { background: var(--blue-dim); }
+    .c-tech   .ai-box-label { color: var(--blue); }
+    .c-tech   .spinner { border-top-color: var(--blue); }
+    .c-tech   .dot { background: var(--blue); }
+
+    .c-books  .hobby-icon { background: var(--amber-dim); }
+    .c-books  .ai-box-label { color: var(--amber); }
+    .c-books  .spinner { border-top-color: var(--amber); }
+    .c-books  .dot { background: var(--amber); }
+
+    .c-gaming .hobby-icon { background: var(--green-dim); }
+    .c-gaming .ai-box-label { color: var(--green); }
+    .c-gaming .spinner { border-top-color: var(--green); }
+    .c-gaming .dot { background: var(--green); }
+
+    /*
+      FOOTER
+      Same style as the dashboard footer with dot separators.
+    */
+    footer {
+      text-align: center; margin-top: 2rem; padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem; color: var(--muted);
+      display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;
+    }
+    footer a { color: var(--blue); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+    .footer-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--border2); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 700px) {
+      .hobby-section.open .hobby-body { grid-template-columns: 1fr; }
+      .hobby-tags { display: none; }
+      .page { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!--
+    HEADER
+    Shows the page title and a back link to the pipeline dashboard.
+  -->
+  <header>
+    <div class="header-left">
+      <div class="header-icon" aria-hidden="true">🎯</div>
+      <div class="header-text">
+        <h1>Hobbies &amp; Interests</h1>
+        <p>noobstar2306 · beyond the terminal</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <a href="https://noobstar2306.github.io/ai-devops-bot/" class="back-link">
+        ← Pipeline dashboard
+      </a>
+      <a href="https://noobstar2306.github.io" class="back-link">
+        ← Portfolio
+      </a>
+    </div>
+  </header>
+
+  <!--
+    HOBBY SECTIONS
+    Each section is collapsible. Click the header to expand/collapse.
+    Left column: static favourite items.
+    Right column: AI-generated insight loaded on first expand.
+    Data is defined in the HOBBIES array in the script — edit there to update content.
+  -->
+  <div id="hobbies-container">
+    <!-- Sections injected here by renderHobbies() -->
+  </div>
+
+  <!--
+    FOOTER
+    Links back to the main dashboard and portfolio.
+  -->
+  <footer>
+    <span>Ganesh Putran</span>
+    <span class="footer-dot"></span>
+    <a href="https://noobstar2306.github.io/ai-devops-bot/" target="_blank" rel="noopener">Pipeline dashboard</a>
+    <span class="footer-dot"></span>
+    <a href="https://noobstar2306.github.io" target="_blank" rel="noopener">Portfolio</a>
+    <span class="footer-dot"></span>
+    <a href="https://github.com/noobstar2306" target="_blank" rel="noopener">GitHub</a>
+  </footer>
+
+</div>
+
+<script>
+  // ── CONFIGURATION ──
+  // GEMINI_KEY is injected at deploy time by the GitHub Actions workflow
+  // via a sed command replacing this placeholder with the real key from
+  // GitHub Secrets. Never commit a real key here.
+  const GEMINI_KEY = "PASTE_GEMINI_TIPS_KEY_HERE";
+
+  // ── HOBBIES DATA ──
+  // Each entry defines one expandable hobby section.
+  // Fields:
+  //   id      — unique identifier used for DOM element IDs
+  //   color   — CSS modifier class controlling the accent colour
+  //   icon    — emoji shown in the section header icon box
+  //   title   — section heading
+  //   subtitle— monospace sub-label shown in the header
+  //   tags    — pill labels shown in the header row
+  //   items   — array of static favourite items shown in the left column
+  //             each item: { main: "title", sub: "description" }
+  //   prompt  — the Gemini prompt used to generate the AI insight
+  //             for this hobby. Should request something personal and useful.
+  const HOBBIES = [
+    {
+      id: 'music', color: 'c-music', icon: '🎵',
+      title: 'Music',
+      subtitle: 'what I listen to',
+      tags: ['Indie', 'Hip-hop', 'Lo-fi', 'Electronic'],
+      items: [
+        { main: 'Kendrick Lamar', sub: 'Hip-hop / West Coast rap' },
+        { main: 'Nujabes', sub: 'Lo-fi hip-hop / jazz fusion' },
+        { main: 'Tame Impala', sub: 'Psychedelic indie pop' },
+        { main: 'A.R. Rahman', sub: 'Bollywood / world fusion' },
+        { main: 'Spotify Discover Weekly', sub: 'Always on rotation' },
+      ],
+      prompt: `I enjoy music like Kendrick Lamar, Nujabes, Tame Impala, and A.R. Rahman.
+Give me one specific artist or album recommendation I might love, with a 2-sentence reason why.
+Be specific — name the artist and one album. Keep it conversational and under 80 words.`
+    },
+    {
+      id: 'travel', color: 'c-travel', icon: '✈️',
+      title: 'Travel',
+      subtitle: 'places & adventures',
+      tags: ['India', 'Mountains', 'Street food', 'Culture'],
+      items: [
+        { main: 'Coorg, Karnataka', sub: 'Coffee estates and misty hills' },
+        { main: 'Hampi, Karnataka', sub: 'Ancient ruins and boulder landscapes' },
+        { main: 'Goa', sub: 'Beaches, food, and history' },
+        { main: 'Ooty, Tamil Nadu', sub: 'Hill station with tea gardens' },
+        { main: 'Bangalore local spots', sub: 'Always exploring the city' },
+      ],
+      prompt: `I enjoy travel within India — I have visited Coorg, Hampi, Goa, and Ooty.
+I love mountains, street food, history, and local culture.
+Recommend one specific destination in India I should visit next, with 2 sentences on why it suits my taste.
+Be specific — name the place and one thing to do there. Under 80 words.`
+    },
+    {
+      id: 'tech', color: 'c-tech', icon: '💻',
+      title: 'Tech projects',
+      subtitle: 'what I build for fun',
+      tags: ['Automation', 'AI tools', 'CLI', 'Open source'],
+      items: [
+        { main: 'AI DevOps Bot', sub: 'CI/CD pipeline with Gemini AI integration' },
+        { main: 'Pipeline dashboard', sub: 'Live GitHub Actions health monitor' },
+        { main: 'Portfolio site', sub: 'Dynamic skills + AI-powered tips' },
+        { main: 'CLI automation scripts', sub: 'Python tools for daily dev tasks' },
+        { main: 'Exploring Kubernetes', sub: 'Learning container orchestration' },
+      ],
+      prompt: `I am a beginner DevOps engineer who enjoys building AI-powered automation tools,
+CI/CD pipelines, and dashboards. My current projects include a GitHub Actions bot with Gemini AI
+and a live pipeline dashboard.
+Suggest one specific side project I could build next that would level up my DevOps and AI skills.
+Name the project and explain it in 2 sentences. Under 80 words.`
+    },
+
+    {
+      id: 'gaming', color: 'c-gaming', icon: '🎮',
+      title: 'Gaming',
+      subtitle: 'what I play',
+      tags: ['Strategy', 'RPG', 'Mobile', 'Co-op'],
+      items: [
+        { main: 'Chess', sub: 'Strategy / competitive online' },
+        { main: 'BGMI / PUBG Mobile', sub: 'Battle royale / co-op' },
+        { main: 'GTA V', sub: 'Open world / story mode' },
+        { main: 'FIFA / FC Mobile', sub: 'Football / casual' },
+        { main: 'Among Us', sub: 'Social deduction / party games' },
+      ],
+      prompt: `I enjoy games like Chess, BGMI/PUBG Mobile, GTA V, FIFA, and Among Us.
+I like strategy, open world, battle royale, and casual/party games.
+Recommend one specific game I should try next with a 2-sentence reason why it suits my taste.
+Name the game and one reason. Under 80 words.`
+    }
+  ];
+
+  // ── renderHobbies ──
+  // Reads the HOBBIES array and injects one collapsible section per entry
+  // into #hobbies-container. Each section has a clickable header and a
+  // body containing the static items list and an AI insight box.
+  // The AI insight loads lazily — only when the section is first opened.
+  function renderHobbies() {
+    const container = document.getElementById('hobbies-container');
+    container.innerHTML = HOBBIES.map(h => `
+      <div class="hobby-section ${h.color}" id="section-${h.id}">
+
+        <!-- Clickable header row -->
+        <div class="hobby-header" onclick="toggleSection('${h.id}')">
+          <div class="hobby-icon">${h.icon}</div>
+          <div class="hobby-title-group">
+            <div class="hobby-title">${h.title}</div>
+            <div class="hobby-subtitle">${h.subtitle}</div>
+          </div>
+          <div class="hobby-tags">
+            ${h.tags.map(t => `<span class="h-tag">${t}</span>`).join('')}
+          </div>
+          <span class="hobby-arrow">▼</span>
+        </div>
+
+        <!-- Collapsible body: static items + AI insight -->
+        <div class="hobby-body">
+
+          <!-- Left column: static favourite items -->
+          <div class="hobby-items">
+            <h4>Favourites</h4>
+            ${h.items.map(item => `
+              <div class="hobby-item">
+                <span class="dot"></span>
+                <div>
+                  <div class="item-main">${item.main}</div>
+                  <div class="item-sub">${item.sub}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          <!-- Right column: AI-generated insight box -->
+          <div class="ai-box" id="ai-box-${h.id}">
+            <div class="ai-box-header">
+              <span class="ai-box-label">✦ AI recommendation</span>
+              <button class="ai-refresh" onclick="fetchInsight('${h.id}', event)">↻ Refresh</button>
+            </div>
+            <div class="ai-box-text" id="ai-text-${h.id}">
+              <div class="ai-loading" id="ai-loading-${h.id}" style="display:none">
+                <div class="spinner"></div><span>Generating recommendation...</span>
+              </div>
+              <span id="ai-content-${h.id}" style="color:var(--muted);font-size:0.8rem;">
+                Open this section to get a personalised AI recommendation.
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── toggleSection ──
+  // Opens or closes a hobby section when its header is clicked.
+  // On first open, calls fetchInsight() to load the AI recommendation.
+  // Tracks whether the insight has already been loaded to avoid duplicate calls.
+  function toggleSection(id) {
+    const section = document.getElementById(`section-${id}`);
+    const isOpen  = section.classList.contains('open');
+
+    // Close all sections first (accordion behaviour)
+    document.querySelectorAll('.hobby-section').forEach(s => s.classList.remove('open'));
+
+    if (!isOpen) {
+      section.classList.add('open');
+      // Load AI insight on first open only (not on re-open)
+      if (!section.dataset.loaded) {
+        section.dataset.loaded = 'true';
+        fetchInsight(id);
+      }
+    }
+  }
+
+  // ── fetchInsight ──
+  // Calls the Gemini API with the hobby-specific prompt and renders the
+  // response in the AI insight box for that section.
+  // event parameter is optional — passed when called from the refresh button
+  // to prevent the click from bubbling up to the section toggle.
+  async function fetchInsight(id, event) {
+    if (event) event.stopPropagation();
+
+    const hobby      = HOBBIES.find(h => h.id === id);
+    const loadingEl  = document.getElementById(`ai-loading-${id}`);
+    const contentEl  = document.getElementById(`ai-content-${id}`);
+
+    // Show spinner and clear previous content
+    loadingEl.style.display  = 'flex';
+    contentEl.style.display  = 'none';
+    contentEl.innerHTML      = '';
+
+    try {
+      // POST to Gemini generateContent with the hobby-specific prompt
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+        {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: hobby.prompt }] }]
+          })
+        }
+      );
+
+      const data   = await res.json();
+      // Navigate Gemini response: candidates[0].content.parts[0].text
+      const text   = data.candidates?.[0]?.content?.parts?.[0]?.text
+        || 'Could not load recommendation. Try refreshing.';
+
+      // Hide spinner and display the recommendation
+      loadingEl.style.display  = 'none';
+      contentEl.style.display  = 'block';
+      contentEl.style.color    = 'var(--muted2)';
+      contentEl.innerHTML      = text;
+
+    } catch (err) {
+      loadingEl.style.display  = 'none';
+      contentEl.style.display  = 'block';
+      contentEl.innerHTML      = '<strong>Connection error.</strong> Try the refresh button.';
+    }
+  }
+
+  // ── Initialise ──
+  // Render all hobby sections on page load.
+  renderHobbies();
+</script>
+</body>
+</html>

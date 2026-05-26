@@ -157,7 +157,7 @@ const REPO = "noobstar2306/ai-devops-bot";
 
 async function loadRuns() {
   try {
-    const res  = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=20`);
+    const res  = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=100`);
     const data = await res.json();
     const runs = data.workflow_runs || [];
     const total  = runs.length;

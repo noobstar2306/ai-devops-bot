@@ -4,126 +4,527 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AI DevOps Bot — Pipeline Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; padding: 2rem; }
-    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #21262d; }
-    header h1 { font-size: 1.5rem; font-weight: 600; }
-    header p  { font-size: 0.85rem; color: #8b949e; margin-top: 4px; }
-    .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
-    .badge-green  { background: #1a4731; color: #3fb950; }
-    .badge-red    { background: #4c1519; color: #f85149; }
-    .badge-yellow { background: #3d2f00; color: #d29922; }
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-    .stat-card { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 1.25rem; }
-    .stat-card .label { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
-    .stat-card .value { font-size: 2rem; font-weight: 700; }
-    .stat-card .value.green { color: #3fb950; }
-    .stat-card .value.red   { color: #f85149; }
-    .stat-card .value.blue  { color: #58a6ff; }
-    .section { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; }
-    .section h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #e6edf3; }
-    .run-row { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid #21262d; font-size: 0.875rem; }
+    :root {
+      --bg:        #060810;
+      --bg2:       #0c0f18;
+      --bg3:       #111520;
+      --bg4:       #161c2d;
+      --border:    #1e2538;
+      --border2:   #252d42;
+      --text:      #e2e8f8;
+      --muted:     #6b7894;
+      --muted2:    #8892aa;
+      --green:     #00d68f;
+      --green-dim: rgba(0,214,143,0.12);
+      --red:       #ff4d6a;
+      --red-dim:   rgba(255,77,106,0.12);
+      --blue:      #4d9fff;
+      --blue-dim:  rgba(77,159,255,0.12);
+      --amber:     #ffb547;
+      --amber-dim: rgba(255,181,71,0.12);
+      --purple:    #a78bfa;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Grid background */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(77,159,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(77,159,255,0.025) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* Ambient glow */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -200px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 400px;
+      background: radial-gradient(ellipse, rgba(77,159,255,0.06) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    .page { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+    /* ── HEADER ── */
+    header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 2.5rem; padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap; gap: 1rem;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 1rem; }
+
+    .header-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--blue-dim), var(--green-dim));
+      border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+
+    .header-text h1 {
+      font-size: 1.2rem; font-weight: 600; color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .header-text p {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem; color: var(--muted); margin-top: 2px;
+    }
+
+    .header-right { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 14px; border-radius: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem; font-weight: 500;
+      border: 1px solid; transition: all 0.3s;
+    }
+
+    .status-pill .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+    }
+
+    .pill-green { background: var(--green-dim); border-color: rgba(0,214,143,0.3); color: var(--green); }
+    .pill-green .dot { background: var(--green); animation: blink 2s infinite; }
+    .pill-red    { background: var(--red-dim);   border-color: rgba(255,77,106,0.3);  color: var(--red); }
+    .pill-red .dot { background: var(--red); }
+    .pill-amber  { background: var(--amber-dim); border-color: rgba(255,181,71,0.3);  color: var(--amber); }
+    .pill-amber .dot { background: var(--amber); animation: blink 1s infinite; }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── STATS GRID ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.25rem;
+      position: relative; overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .stat-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+
+    .stat-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+    }
+
+    .stat-card.blue-accent::before  { background: linear-gradient(90deg, var(--blue), transparent); }
+    .stat-card.green-accent::before { background: linear-gradient(90deg, var(--green), transparent); }
+    .stat-card.red-accent::before   { background: linear-gradient(90deg, var(--red), transparent); }
+    .stat-card.amber-accent::before { background: linear-gradient(90deg, var(--amber), transparent); }
+
+    .stat-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem;
+    }
+
+    .stat-value {
+      font-size: 2.25rem; font-weight: 700;
+      letter-spacing: -0.03em; line-height: 1;
+    }
+
+    .stat-value.blue   { color: var(--blue); }
+    .stat-value.green  { color: var(--green); }
+    .stat-value.red    { color: var(--red); }
+    .stat-value.amber  { color: var(--amber); }
+
+    .stat-sub {
+      font-size: 0.75rem; color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── SECTIONS ── */
+    .section {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-size: 0.85rem; font-weight: 600; color: var(--text);
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+
+    .section-title .icon { font-size: 0.9rem; }
+
+    .section-meta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem; color: var(--muted);
+    }
+
+    /* ── BAR CHART ── */
+    .bar-chart {
+      display: flex; align-items: flex-end;
+      gap: 4px; height: 72px; margin-top: 0.5rem;
+    }
+
+    .bar {
+      flex: 1; border-radius: 3px 3px 0 0;
+      min-height: 6px; cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+      position: relative;
+    }
+
+    .bar:hover { opacity: 0.8; transform: scaleY(1.05); transform-origin: bottom; }
+    .bar.pass { background: linear-gradient(to top, #00a86b, var(--green)); }
+    .bar.fail { background: linear-gradient(to top, #cc1f3c, var(--red)); }
+    .bar.skip { background: var(--border2); }
+
+    /* ── RUN ROWS ── */
+    .run-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      align-items: center; gap: 1rem;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+
     .run-row:last-child { border-bottom: none; }
-    .run-row .run-name   { color: #e6edf3; flex: 1; }
-    .run-row .run-branch { color: #8b949e; font-size: 0.75rem; margin: 0 1rem; }
-    .run-row .run-time   { color: #8b949e; font-size: 0.75rem; min-width: 80px; text-align: right; }
-    .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 80px; margin-top: 0.5rem; }
-    .bar { flex: 1; border-radius: 4px 4px 0 0; min-height: 8px; cursor: pointer; transition: opacity 0.2s; }
-    .bar:hover { opacity: 0.8; }
-    .bar.pass { background: #3fb950; }
-    .bar.fail { background: #f85149; }
-    .ai-summary { background: #0d419d22; border: 1px solid #1f6feb; border-radius: 8px; padding: 1rem; font-size: 0.875rem; line-height: 1.6; color: #cdd9e5; }
-    .ai-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #58a6ff; margin-bottom: 6px; font-weight: 600; }
-    .loading { color: #8b949e; font-size: 0.875rem; }
-    footer { text-align: center; margin-top: 2rem; font-size: 0.75rem; color: #8b949e; }
-    footer a { color: #58a6ff; text-decoration: none; }
+    .run-row:hover { background: rgba(255,255,255,0.02); margin: 0 -1.25rem; padding: 0.65rem 1.25rem; border-radius: 6px; }
+
+    .run-name {
+      font-size: 0.85rem; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .run-branch {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem; color: var(--muted);
+      background: var(--bg4); border: 1px solid var(--border);
+      padding: 2px 8px; border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .run-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem; font-weight: 600;
+      padding: 3px 10px; border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .rb-pass   { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,214,143,0.25); }
+    .rb-fail   { background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(255,77,106,0.25); }
+    .rb-run    { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,181,71,0.25); }
+
+    .run-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem; color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* ── AI SUMMARY ── */
+    .ai-summary-box {
+      background: linear-gradient(135deg, rgba(77,159,255,0.05), rgba(0,214,143,0.03));
+      border: 1px solid rgba(77,159,255,0.2);
+      border-radius: 10px; padding: 1rem;
+    }
+
+    .ai-summary-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem; font-weight: 600;
+      color: var(--blue); text-transform: uppercase;
+      letter-spacing: 0.1em; margin-bottom: 0.5rem;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+
+    .ai-summary-text {
+      font-size: 0.875rem; line-height: 1.7; color: var(--muted2);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center; margin-top: 2rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem; color: var(--muted);
+      padding-top: 1.5rem; border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center; gap: 1rem;
+    }
+
+    footer a { color: var(--blue); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+
+    .footer-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--border2); }
+
+    .loading {
+      color: var(--muted); font-size: 0.85rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
 
     /* ── TIPS BUTTON ── */
     #tips-btn {
-      position: fixed; bottom: 2rem; right: 2rem;
-      width: 56px; height: 56px; border-radius: 50%;
-      background: #161b22; border: 2px solid #d29922;
-      font-size: 1.5rem; cursor: pointer;
+      position: fixed; bottom: 1.75rem; right: 1.75rem;
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--bg3);
+      border: 1px solid var(--amber);
+      font-size: 1.3rem; cursor: pointer;
       z-index: 9999; pointer-events: all;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 20px rgba(210,153,34,0.3);
+      box-shadow: 0 0 20px rgba(255,181,71,0.2), 0 4px 16px rgba(0,0,0,0.4);
       transition: transform 0.2s, box-shadow 0.2s;
     }
-    #tips-btn:hover { transform: scale(1.1); box-shadow: 0 8px 28px rgba(210,153,34,0.5); }
+
+    #tips-btn:hover {
+      transform: scale(1.1) rotate(-5deg);
+      box-shadow: 0 0 32px rgba(255,181,71,0.4), 0 8px 24px rgba(0,0,0,0.4);
+    }
 
     /* ── TIPS OVERLAY ── */
     #tips-overlay {
       display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.7); z-index: 99999;
-      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
+      z-index: 99999; align-items: center; justify-content: center;
+      padding: 1rem;
     }
+
     #tips-overlay.open { display: flex; }
 
     /* ── TIPS MODAL ── */
     #tips-modal {
-      background: #0d1117; border: 1px solid #21262d;
-      border-radius: 16px; width: 90%; max-width: 500px;
-      overflow: hidden; animation: popIn 0.2s ease;
-      font-family: -apple-system, sans-serif;
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-radius: 16px; width: 100%; max-width: 480px;
+      overflow: hidden;
+      animation: popIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
     }
-    @keyframes popIn { from { opacity:0; transform: scale(0.9); } to { opacity:1; transform: scale(1); } }
-    #tips-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid #21262d; }
-    #tips-badge { font-size: 0.7rem; font-weight: 700; color: #d29922; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 3px; }
-    #tips-subtitle { font-size: 0.7rem; color: #8b949e; font-family: monospace; }
-    #tips-close { background: none; border: none; color: #8b949e; font-size: 1.1rem; cursor: pointer; padding: 4px 8px; line-height: 1; }
-    #tips-close:hover { color: #e6edf3; }
-    #tips-body { padding: 1.5rem 1.25rem; min-height: 130px; display: flex; align-items: center; }
-    #tips-loading { display: flex; align-items: center; gap: 0.75rem; color: #8b949e; font-size: 0.875rem; }
-    .spinner { width: 18px; height: 18px; border: 2px solid #21262d; border-top-color: #d29922; border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.88) translateY(16px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    #tips-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(255,181,71,0.05), transparent);
+    }
+
+    #tips-badge {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem; font-weight: 700;
+      color: var(--amber); text-transform: uppercase; letter-spacing: 0.12em;
+      margin-bottom: 3px;
+    }
+
+    #tips-subtitle {
+      font-size: 0.75rem; color: var(--muted);
+    }
+
+    #tips-close {
+      background: var(--bg4); border: 1px solid var(--border);
+      color: var(--muted); font-size: 0.8rem; cursor: pointer;
+      width: 28px; height: 28px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+
+    #tips-close:hover { background: var(--border2); color: var(--text); }
+
+    #tips-body {
+      padding: 1.5rem 1.25rem; min-height: 130px;
+      display: flex; align-items: center;
+    }
+
+    #tips-content { width: 100%; }
+
+    #tips-loading {
+      display: flex; align-items: center; gap: 0.75rem;
+      color: var(--muted); font-size: 0.875rem;
+    }
+
+    .spinner {
+      width: 18px; height: 18px; flex-shrink: 0;
+      border: 2px solid var(--border2);
+      border-top-color: var(--amber);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
     @keyframes spin { to { transform: rotate(360deg); } }
-    #tips-text { font-size: 0.95rem; line-height: 1.75; color: #e6edf3; display: none; }
-    #tips-text strong { color: #d29922; }
-    #tips-footer { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1.25rem; border-top: 1px solid #21262d; }
-    #tips-refresh { font-family: monospace; font-size: 0.75rem; background: none; border: 1px solid #21262d; color: #8b949e; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
-    #tips-refresh:hover { border-color: #d29922; color: #d29922; }
-    #tips-topic { font-family: monospace; font-size: 0.65rem; color: #8b949e; text-transform: uppercase; }
+
+    #tips-text {
+      font-size: 0.9rem; line-height: 1.75;
+      color: var(--text); display: none;
+    }
+
+    #tips-text strong { color: var(--amber); font-weight: 600; }
+
+    #tips-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.875rem 1.25rem;
+      border-top: 1px solid var(--border);
+      background: var(--bg3);
+    }
+
+    #tips-refresh {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem; background: none;
+      border: 1px solid var(--border2); color: var(--muted);
+      padding: 5px 14px; border-radius: 6px; cursor: pointer;
+      transition: all 0.2s; display: flex; align-items: center; gap: 0.4rem;
+    }
+
+    #tips-refresh:hover { border-color: var(--amber); color: var(--amber); }
+
+    #tips-topic {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      max-width: 180px; text-align: right;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 700px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .run-row { grid-template-columns: 1fr auto auto; }
+      .run-time { display: none; }
+      header { flex-direction: column; }
+    }
+
+    @media (max-width: 400px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .page { padding: 1rem; }
+    }
+
+    /* ── FADE IN ANIMATION ── */
+    .fade-up {
+      opacity: 0; transform: translateY(12px);
+      animation: fadeUp 0.4s ease forwards;
+    }
+    .fade-up:nth-child(1) { animation-delay: 0.05s; }
+    .fade-up:nth-child(2) { animation-delay: 0.1s; }
+    .fade-up:nth-child(3) { animation-delay: 0.15s; }
+    .fade-up:nth-child(4) { animation-delay: 0.2s; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
+<div class="page">
 
-<header>
-  <div>
-    <h1>AI DevOps Bot</h1>
-    <p>Pipeline Dashboard — <span id="repo-name">noobstar2306/ai-devops-bot</span></p>
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <div class="header-icon">⚡</div>
+      <div class="header-text">
+        <h1>AI DevOps Bot</h1>
+        <p>noobstar2306/ai-devops-bot · pipeline dashboard</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="status-pill pill-amber" id="overall-status">
+        <span class="dot"></span>Loading
+      </span>
+    </div>
+  </header>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card blue-accent fade-up">
+      <div class="stat-label">Total runs</div>
+      <div class="stat-value blue" id="stat-total">—</div>
+      <div class="stat-sub">all time</div>
+    </div>
+    <div class="stat-card green-accent fade-up">
+      <div class="stat-label">Passed</div>
+      <div class="stat-value green" id="stat-passed">—</div>
+      <div class="stat-sub">successful</div>
+    </div>
+    <div class="stat-card red-accent fade-up">
+      <div class="stat-label">Failed</div>
+      <div class="stat-value red" id="stat-failed">—</div>
+      <div class="stat-sub">need attention</div>
+    </div>
+    <div class="stat-card amber-accent fade-up">
+      <div class="stat-label">Success rate</div>
+      <div class="stat-value amber" id="stat-rate">—</div>
+      <div class="stat-sub" id="stat-trend">calculating</div>
+    </div>
   </div>
-  <span class="badge badge-yellow" id="overall-status">Loading...</span>
-</header>
 
-<div class="stats-grid">
-  <div class="stat-card"><div class="label">Total runs</div><div class="value blue" id="stat-total">—</div></div>
-  <div class="stat-card"><div class="label">Passed</div><div class="value green" id="stat-passed">—</div></div>
-  <div class="stat-card"><div class="label">Failed</div><div class="value red" id="stat-failed">—</div></div>
-  <div class="stat-card"><div class="label">Success rate</div><div class="value blue" id="stat-rate">—</div></div>
-</div>
-
-<div class="section">
-  <h2>Build history (last 14 runs)</h2>
-  <div class="bar-chart" id="bar-chart"></div>
-</div>
-
-<div class="section">
-  <h2>Recent runs</h2>
-  <div id="runs-list"><span class="loading">Loading pipeline runs...</span></div>
-</div>
-
-<div class="section">
-  <h2>AI health summary</h2>
-  <div class="ai-summary">
-    <div class="ai-label">Generated from recent pipeline data</div>
-    <div id="ai-summary-text"><span class="loading">Generating summary...</span></div>
+  <!-- BUILD HISTORY -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><span class="icon">📊</span> Build history</div>
+      <span class="section-meta" id="chart-meta">last 30 runs</span>
+    </div>
+    <div class="bar-chart" id="bar-chart">
+      <span class="loading">Loading...</span>
+    </div>
   </div>
-</div>
 
-<footer>
-  Built with GitHub Actions + Gemini AI &nbsp;·&nbsp;
-  <a href="https://github.com/noobstar2306/ai-devops-bot" target="_blank">View source</a>
-</footer>
+  <!-- RECENT RUNS -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><span class="icon">🔄</span> Recent runs</div>
+      <span class="section-meta">latest 10</span>
+    </div>
+    <div id="runs-list"><span class="loading">⏳ Loading pipeline runs...</span></div>
+  </div>
+
+  <!-- AI HEALTH SUMMARY -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><span class="icon">🤖</span> AI health summary</div>
+    </div>
+    <div class="ai-summary-box">
+      <div class="ai-summary-label">✦ pipeline intelligence</div>
+      <div class="ai-summary-text" id="ai-summary-text">Analysing pipeline data...</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>Built with GitHub Actions</span>
+    <span class="footer-dot"></span>
+    <span>Gemini AI</span>
+    <span class="footer-dot"></span>
+    <a href="https://github.com/noobstar2306/ai-devops-bot" target="_blank">View source ↗</a>
+    <span class="footer-dot"></span>
+    <a href="https://noobstar2306.github.io" target="_blank">Portfolio ↗</a>
+  </footer>
+
+</div>
 
 <!-- TIPS BUTTON -->
 <button id="tips-btn" title="Get an AI DevOps tip">💡</button>
@@ -134,7 +535,7 @@
     <div id="tips-header">
       <div>
         <span id="tips-badge">Did you know?</span>
-        <span id="tips-subtitle">AI DevOps Tips</span>
+        <span id="tips-subtitle">AI DevOps Tips — powered by Gemini</span>
       </div>
       <button id="tips-close">✕</button>
     </div>
@@ -152,14 +553,16 @@
 </div>
 
 <script>
-// ── Dashboard ──
 const REPO = "noobstar2306/ai-devops-bot";
+const GEMINI_KEY = "PASTE_YOUR_GEMINI_KEY_HERE";
 
+// ── Dashboard ──
 async function loadRuns() {
   try {
     const res  = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=100`);
     const data = await res.json();
     const runs = data.workflow_runs || [];
+
     const total  = runs.length;
     const passed = runs.filter(r => r.conclusion === "success").length;
     const failed = runs.filter(r => r.conclusion === "failure").length;
@@ -169,44 +572,69 @@ async function loadRuns() {
     document.getElementById("stat-passed").textContent = passed;
     document.getElementById("stat-failed").textContent = failed;
     document.getElementById("stat-rate").textContent   = rate + "%";
+    document.getElementById("stat-trend").textContent  = rate >= 80 ? "healthy ✓" : rate >= 50 ? "needs review" : "critical";
 
-    const badge  = document.getElementById("overall-status");
+    const status = document.getElementById("overall-status");
     const latest = runs[0]?.conclusion;
-    if (latest === "success") { badge.textContent = "All systems go"; badge.className = "badge badge-green"; }
-    else if (latest === "failure") { badge.textContent = "Last build failed"; badge.className = "badge badge-red"; }
-    else { badge.textContent = "Running..."; badge.className = "badge badge-yellow"; }
+    if (latest === "success") {
+      status.className = "status-pill pill-green";
+      status.innerHTML = '<span class="dot"></span>All systems go';
+    } else if (latest === "failure") {
+      status.className = "status-pill pill-red";
+      status.innerHTML = '<span class="dot"></span>Build failed';
+    } else {
+      status.className = "status-pill pill-amber";
+      status.innerHTML = '<span class="dot"></span>Running';
+    }
 
-    const chart    = document.getElementById("bar-chart");
+    // Bar chart — last 30 runs
+    const chart = document.getElementById("bar-chart");
     chart.innerHTML = "";
-    runs.slice(0, 14).reverse().forEach((r, i) => {
+    const chartRuns = runs.slice(0, 30).reverse();
+    document.getElementById("chart-meta").textContent = `last ${chartRuns.length} runs`;
+    chartRuns.forEach(r => {
       const bar = document.createElement("div");
-      bar.className = `bar ${r.conclusion === "success" ? "pass" : "fail"}`;
-      bar.style.height = `${Math.max(12, 80 - i * 2)}px`;
-      bar.title = `${r.display_title} — ${r.conclusion}`;
+      const pct = r.conclusion === "success" ? 85 + Math.random() * 15 : 20 + Math.random() * 40;
+      bar.className = `bar ${r.conclusion === "success" ? "pass" : r.conclusion === "failure" ? "fail" : "skip"}`;
+      bar.style.height = `${pct}%`;
+      bar.title = `${r.display_title} — ${r.conclusion || "in progress"}`;
       chart.appendChild(bar);
     });
 
+    // Recent runs — last 10
     const list = document.getElementById("runs-list");
     list.innerHTML = "";
-    runs.slice(0, 8).forEach(r => {
+    runs.slice(0, 10).forEach(r => {
       const c  = r.conclusion || "in_progress";
-      const bc = c === "success" ? "badge-green" : c === "failure" ? "badge-red" : "badge-yellow";
-      const bt = c === "success" ? "passed" : c === "failure" ? "failed" : "running";
+      const bc = c === "success" ? "rb-pass" : c === "failure" ? "rb-fail" : "rb-run";
+      const bt = c === "success" ? "✓ passed" : c === "failure" ? "✗ failed" : "⟳ running";
       const t  = new Date(r.created_at).toLocaleDateString("en-IN", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" });
       const row = document.createElement("div");
       row.className = "run-row";
-      row.innerHTML = `<span class="run-name">${r.display_title||r.name}</span><span class="run-branch">${r.head_branch}</span><span class="badge ${bc}">${bt}</span><span class="run-time">${t}</span>`;
+      row.innerHTML = `
+        <span class="run-name">${r.display_title || r.name}</span>
+        <span class="run-branch">${r.head_branch}</span>
+        <span class="run-badge ${bc}">${bt}</span>
+        <span class="run-time">${t}</span>
+      `;
       list.appendChild(row);
     });
 
+    // AI summary
     const el = document.getElementById("ai-summary-text");
-    if (total === 0) el.textContent = "No pipeline runs yet. Push some code to get started!";
-    else if (rate === 100) el.textContent = `Your pipeline is in excellent health — all ${total} runs have passed. Keep up the great work!`;
-    else if (rate >= 80) el.textContent = `Your pipeline is healthy with a ${rate}% success rate across ${total} runs. ${failed} run${failed>1?"s":""} failed — check for patterns.`;
-    else if (rate >= 50) el.textContent = `Your pipeline has a ${rate}% success rate across ${total} runs. ${failed} failures recently — review test coverage and error handling.`;
-    else el.textContent = `Your pipeline needs attention — only ${rate}% of ${total} runs passed. Focus on stabilising failing tests before adding new features.`;
-    if (latest === "failure") el.textContent += " Your most recent build failed — check the AI explanation on your PR.";
-    else if (latest === "success") el.textContent += " Your latest build is green.";
+    if (total === 0) {
+      el.textContent = "No pipeline runs yet. Push some code to get started!";
+    } else if (rate === 100) {
+      el.textContent = `Pipeline in excellent health — all ${total} runs passed. Tests are working perfectly and catching issues before they reach production. Keep it up!`;
+    } else if (rate >= 80) {
+      el.textContent = `Pipeline is healthy at ${rate}% success rate across ${total} runs. ${failed} run${failed > 1 ? "s" : ""} failed — worth checking for patterns. Overall you're in great shape.`;
+    } else if (rate >= 50) {
+      el.textContent = `Pipeline at ${rate}% success rate across ${total} runs. ${failed} failures detected — review your test coverage and error handling. Consider checking the AI failure explanations on your PRs.`;
+    } else {
+      el.textContent = `Pipeline needs attention — ${rate}% success rate across ${total} runs. ${failed} failures recorded. Focus on stabilising tests before adding new features.`;
+    }
+    if (latest === "failure") el.textContent += " ⚠️ Latest build failed — check the AI explanation on your PR.";
+    else if (latest === "success") el.textContent += " ✅ Latest build is green.";
 
   } catch (err) {
     document.getElementById("runs-list").innerHTML = `<span class="loading">Could not load runs: ${err.message}</span>`;
@@ -223,38 +651,31 @@ const TOPICS = [
   'Infrastructure as Code with Terraform','LLM APIs in developer workflows'
 ];
 
-function openTips() {
-  document.getElementById('tips-overlay').classList.add('open');
-  fetchTip();
-}
-
-function closeTips() {
-  document.getElementById('tips-overlay').classList.remove('open');
-}
+function openTips()  { document.getElementById('tips-overlay').classList.add('open'); fetchTip(); }
+function closeTips() { document.getElementById('tips-overlay').classList.remove('open'); }
 
 async function fetchTip() {
   const loading  = document.getElementById('tips-loading');
   const text     = document.getElementById('tips-text');
   const badge    = document.getElementById('tips-badge');
-  const topic    = document.getElementById('tips-topic');
+  const topicEl  = document.getElementById('tips-topic');
   const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
-  const topicVal = TOPICS[Math.floor(Math.random() * TOPICS.length)];
+  const topic    = TOPICS[Math.floor(Math.random() * TOPICS.length)];
 
-  badge.textContent = category;
-  topic.textContent = topicVal;
+  badge.textContent   = category;
+  topicEl.textContent = topic;
   loading.style.display = 'flex';
   text.style.display    = 'none';
   text.innerHTML        = '';
 
   try {
-    const GEMINI_KEY = 'AIzaSyBLlXm9RDcm-s3I1ymbXZgsTc16H0xNHEA';
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `Give me one "${category}" about: ${topicVal}. Format: Start with a bold heading using <strong> tags, then 2-3 sentences. Keep it practical for a beginner DevOps engineer. No bullet points. No preamble. Just the tip.` }] }]
+          contents: [{ parts: [{ text: `Give me one "${category}" about: ${topic}. Start with a bold heading using <strong> tags, then 2-3 sentences. Practical for a beginner DevOps engineer. No bullets, no preamble.` }] }]
         })
       }
     );
@@ -270,13 +691,10 @@ async function fetchTip() {
   }
 }
 
-// Wire up events after DOM is ready
 document.getElementById('tips-btn').addEventListener('click', openTips);
 document.getElementById('tips-close').addEventListener('click', closeTips);
 document.getElementById('tips-refresh').addEventListener('click', fetchTip);
-document.getElementById('tips-overlay').addEventListener('click', function(e) {
-  if (e.target === this) closeTips();
-});
+document.getElementById('tips-overlay').addEventListener('click', e => { if (e.target.id === 'tips-overlay') closeTips(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTips(); });
 
 loadRuns();

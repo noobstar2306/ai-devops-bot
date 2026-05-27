@@ -522,12 +522,14 @@ No bullet points. No preamble. Just the tip directly.`
   let readmeLoaded = false;
 
   // Lightweight Markdown-to-HTML converter for tooltip display.
-  // Strips images, converts links to plain text, handles headings/lists/bold/code.
+  // Strips images, code blocks, links and cleans up for small tooltip context.
   function parseMarkdown(md) {
     return md
-      .replace(/<!--[\s\S]*?-->/g, '')       // remove HTML comments
-      .replace(/!\[.*?\]\(.*?\)/g, '')        // remove images
+      .replace(/<!--[\s\S]*?-->/g, '')         // remove HTML comments
+      .replace(/```[\s\S]*?```/g, '')           // remove fenced code blocks
+      .replace(/!\[.*?\]\(.*?\)/g, '')          // remove images
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links → plain text
+      .replace(/[├──│└]/g, '')                  // remove tree characters
       .split('\n')
       .map(line => {
         if (line.startsWith('### ')) return `<h3>${line.slice(4)}</h3>`;
@@ -535,14 +537,17 @@ No bullet points. No preamble. Just the tip directly.`
         if (line.startsWith('# '))   return `<h1>${line.slice(2)}</h1>`;
         if (/^[-*] /.test(line))     return `<li>${line.slice(2)}</li>`;
         if (/^\d+\. /.test(line))    return `<li>${line.replace(/^\d+\. /,'')}</li>`;
-        if (line.trim() === '' || line.startsWith('---')) return '';
+        if (line.trim() === '' || line.startsWith('---') || line.trim() === '|') return '';
+        // Skip table rows
+        if (line.trim().startsWith('|')) return '';
         return `<p>${line}</p>`;
       })
       .join('')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/(<li>.*?<\/li>)+/g, m => `<ul>${m}</ul>`)
-      .replace(/<p><\/p>/g, '');
+      .replace(/<p><\/p>/g, '')
+      .replace(/<p>\s*<\/p>/g, '');
   }
 
   async function fetchReadme() {

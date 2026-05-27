@@ -537,11 +537,10 @@
 
 <script>
   // ── CONFIGURATION ──
-  // REPO:       the GitHub repository to pull pipeline run data from.
-  // GEMINI_KEY: your Gemini API key from aistudio.google.com.
-  //             Replace the placeholder — do NOT commit a real key to a public repo.
+  // All AI calls go through the Cloudflare Worker proxy.
+  // No API keys in this file — they live safely in Cloudflare secrets.
+  const WORKER_URL = 'https://gemini-proxy.ganeshputran.workers.dev';
   const REPO       = "noobstar2306/ai-devops-bot";
-  const GEMINI_KEY = "PASTE_GEMINI_TIPS_KEY_HER";
 
   // ── TIPS DATA ──
   // Arrays of category labels and DevOps topics.
@@ -739,24 +738,17 @@
     textEl.innerHTML        = '';
 
     try {
-      // POST to the Gemini generateContent endpoint with a structured prompt
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `Give me one "${category}" about: ${topic}.
+      // Call Cloudflare Worker proxy — Gemini key never touches the browser
+      const res = await fetch(`${WORKER_URL}/gemini`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: `Give me one "${category}" about: ${topic}.
 Start with a bold heading using <strong> tags, then 2-3 sentences.
 Keep it practical for a beginner DevOps engineer.
 No bullet points. No preamble. Just the tip.`
-              }]
-            }]
-          })
-        }
-      );
+        })
+      });
 
       const data = await res.json();
 

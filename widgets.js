@@ -18,23 +18,43 @@
   'use strict';
 
   // ── CONFIGURATION ──
-  // All API calls go through the Cloudflare Worker.
-  // No API keys in this file — they live safely in Cloudflare secrets.
-  const WORKER_URL = 'https://gemini-proxy.ganeshputran.workers.dev';
+  // Single source of truth for all project constants.
+  // Update this block when repos, URLs, or routing changes —
+  // nothing else in this file needs to change.
+  const CONFIG = {
+    // Cloudflare Worker — all browser API calls go here, keys never in this file
+    workerUrl:     'https://gemini-proxy.ganeshputran.workers.dev',
 
-  // ── ISSUE ROUTING ──
-  // Defines which GitHub repo each issue type is created in.
-  // bugs + questions  → backend repo (ai-devops-bot) — functional issues
-  // suggestions + improvements → frontend repo (noobstar2306.github.io) — appearance/UX ideas
-  const ISSUE_ROUTING = {
-    bug:         { repo: 'noobstar2306/ai-devops-bot',      label: 'ai-devops-bot',       color: '#4fa3ff' },
-    question:    { repo: 'noobstar2306/ai-devops-bot',      label: 'ai-devops-bot',       color: '#4fa3ff' },
-    suggestion:  { repo: 'noobstar2306/noobstar2306.github.io', label: 'noobstar2306.github.io', color: '#a78bfa' },
-    improvement: { repo: 'noobstar2306/noobstar2306.github.io', label: 'noobstar2306.github.io', color: '#a78bfa' },
+    // GitHub repos
+    backendRepo:   'noobstar2306/ai-devops-bot',
+    frontendRepo:  'noobstar2306/noobstar2306.github.io',
+
+    // CI workflow filename — used for live pipeline preview
+    ciWorkflow:    'ci.yml',
+
+    // Live site URLs
+    urls: {
+      portfolio:  'https://noobstar2306.github.io',
+      dashboard:  'https://noobstar2306.github.io/ai-devops-bot/',
+      hobbies:    'https://noobstar2306.github.io/ai-devops-bot/hobbies.html',
+      widgets:    'https://noobstar2306.github.io/ai-devops-bot/widgets.js',
+    },
+
+    // Issue routing — which repo each issue type goes to
+    issueRouting: {
+      bug:         { repo: 'noobstar2306/ai-devops-bot',          color: '#4fa3ff' },
+      question:    { repo: 'noobstar2306/ai-devops-bot',          color: '#4fa3ff' },
+      suggestion:  { repo: 'noobstar2306/noobstar2306.github.io', color: '#a78bfa' },
+      improvement: { repo: 'noobstar2306/noobstar2306.github.io', color: '#a78bfa' },
+    },
   };
 
-  // README always fetches from the backend repo
-  const README_REPO = 'noobstar2306/ai-devops-bot';
+  // Convenience aliases used throughout the file
+  const WORKER_URL   = CONFIG.workerUrl;
+  const README_REPO  = CONFIG.backendRepo;
+  const ISSUE_ROUTING = CONFIG.issueRouting;
+
+
 
   // ── TIPS CONFIGURATION ──
   // Categories and topics for the Gemini prompt.
@@ -593,8 +613,8 @@ No bullet points. No preamble. Just the tip directly.`
   // Only runs if #pipeline-steps exists on the page (portfolio only).
   // ──────────────────────────────────────────────────────────────────────────
 
-  const PIPELINE_REPO = 'noobstar2306/ai-devops-bot';
-  const PIPELINE_WORKFLOW = 'ci.yml';
+  const PIPELINE_REPO     = CONFIG.backendRepo;
+  const PIPELINE_WORKFLOW = CONFIG.ciWorkflow;
 
   // Icon map — maps GitHub Actions step conclusion to an emoji
   function stepIcon(conclusion) {
@@ -643,6 +663,11 @@ No bullet points. No preamble. Just the tip directly.`
         stepsEl.innerHTML = '<div class="pipeline-step"><span>⚠️</span> No runs found</div>';
         return;
       }
+
+      // Update hero stat — total pipeline runs (capped display at 999+)
+      const totalRuns = runsData.total_count || 0;
+      const statRuns  = document.getElementById('stat-runs');
+      if (statRuns) statRuns.textContent = totalRuns > 999 ? '999+' : totalRuns;
 
       // Update the title with run status and time
       const statusIcon = run.conclusion === 'success' ? '✅' :

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Site under maintenance — Ganesh Putran's portfolio will be back shortly."/>
+  <!-- Auto-refresh every 60 seconds to check if maintenance is over -->
+  <meta http-equiv="refresh" content="60"/>
+  <title>Under Maintenance — Ganesh Putran</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── DESIGN TOKENS — same palette as portfolio/dashboard ── */
+    :root {
+      --bg:        #05080d;
+      --bg-card:   #0e1420;
+      --border:    #1a2234;
+      --border2:   #212d40;
+      --text:      #e4eaf6;
+      --muted:     #7a8ba6;
+      --muted2:    #9aaec7;
+      --green:     #00e09a;
+      --green-dim: rgba(0,224,154,0.1);
+      --blue:      #4fa3ff;
+      --amber:     #ffb547;
+      --amber-dim: rgba(255,181,71,0.12);
+    }
+
+    /* ── RESET ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    a { text-decoration: none; color: inherit; }
+
+    /* ── BODY: full-viewport centred layout ── */
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* ── GRID BACKGROUND ── */
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(79,163,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79,163,255,0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── AMBIENT GLOW ── */
+    body::after {
+      content: ''; position: fixed;
+      top: -200px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 500px;
+      background: radial-gradient(ellipse, rgba(255,181,71,0.07) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── MAIN CARD ── */
+    .card {
+      position: relative; z-index: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 3.5rem;
+      max-width: 560px; width: 100%;
+      margin: 1.5rem;
+      text-align: center;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+    }
+
+    /* Amber top accent line on the card */
+    .card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--amber), transparent);
+      border-radius: 2px 2px 0 0;
+    }
+
+    /* ── ANIMATED GEAR ICON ── */
+    .gear-wrapper {
+      width: 80px; height: 80px; margin: 0 auto 2rem;
+      background: var(--amber-dim);
+      border: 1px solid rgba(255,181,71,0.3);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem;
+      animation: spin-slow 6s linear infinite;
+    }
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+
+    /* ── BADGE ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem; font-weight: 700;
+      color: var(--amber);
+      background: var(--amber-dim);
+      border: 1px solid rgba(255,181,71,0.25);
+      border-radius: 999px; padding: 0.45rem 1rem;
+      text-transform: uppercase; letter-spacing: 0.15em;
+      margin-bottom: 1.5rem;
+    }
+    /* Pulsing dot inside badge */
+    .badge::before {
+      content: ''; width: 6px; height: 6px;
+      background: var(--amber); border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    /* ── HEADING ── */
+    h1 {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      font-weight: 800; letter-spacing: -0.03em;
+      line-height: 1.1; margin-bottom: 1rem;
+    }
+    h1 .accent { color: var(--amber); }
+
+    /* ── DESCRIPTION ── */
+    p.desc {
+      font-size: 1rem; color: var(--muted2);
+      line-height: 1.8; margin-bottom: 2rem; font-weight: 300;
+    }
+
+    /* ── PROGRESS BAR ──
+       Visual indicator that work is in progress.
+       Animated fill cycles back and forth to suggest activity. */
+    .progress-wrap {
+      background: var(--border);
+      border-radius: 999px; height: 6px;
+      overflow: hidden; margin-bottom: 0.75rem;
+    }
+    .progress-bar {
+      height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--amber), var(--green));
+      animation: progress 3s ease-in-out infinite alternate;
+    }
+    @keyframes progress {
+      from { width: 30%; }
+      to   { width: 85%; }
+    }
+    .progress-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem; color: var(--muted);
+      text-align: right; letter-spacing: 0.08em;
+      margin-bottom: 2rem;
+    }
+
+    /* ── DIVIDER ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+    /* ── LINKS ── */
+    .links {
+      display: flex; justify-content: center;
+      gap: 1rem; flex-wrap: wrap;
+    }
+    .link-btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+      padding: 0.65rem 1.25rem; border-radius: 999px;
+      border: 1px solid var(--border2); color: var(--muted);
+      transition: all 0.2s;
+    }
+    .link-btn:hover { border-color: var(--blue); color: var(--blue); transform: translateY(-2px); }
+    .link-btn.primary { border-color: var(--green); color: var(--green); }
+    .link-btn.primary:hover { background: var(--green-dim); }
+
+    /* ── AUTO REFRESH NOTICE ── */
+    .refresh-note {
+      margin-top: 2rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem; color: var(--muted);
+      display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+    }
+    /* Countdown timer updated by JS */
+    #countdown { color: var(--amber); font-weight: 700; }
+
+    /* ── FOOTER ── */
+    footer {
+      position: fixed; bottom: 1.5rem; left: 0; right: 0;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem; color: var(--muted);
+    }
+    footer a { color: var(--blue); }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+
+    <!-- Animated spinning gear -->
+    <div class="gear-wrapper" aria-hidden="true">⚙️</div>
+
+    <!-- Status badge with pulsing dot -->
+    <div class="badge">Scheduled maintenance</div>
+
+    <!-- Main heading -->
+    <h1>Back <span class="accent">shortly</span></h1>
+
+    <!-- Description — edit this message for each maintenance window -->
+    <p class="desc">
+      We're making improvements to the portfolio and pipeline.
+      Everything will be back up soon — thanks for your patience!
+    </p>
+
+    <!-- Animated progress bar -->
+    <div class="progress-wrap">
+      <div class="progress-bar"></div>
+    </div>
+    <div class="progress-label">work in progress...</div>
+
+    <hr class="divider"/>
+
+    <!-- Links to check elsewhere while the site is down -->
+    <div class="links">
+      <a href="https://github.com/noobstar2306" target="_blank" rel="noopener" class="link-btn primary">
+        GitHub ↗
+      </a>
+      <a href="https://www.linkedin.com/in/ganesh-putran-b047ba235/" target="_blank" rel="noopener" class="link-btn">
+        LinkedIn ↗
+      </a>
+      <a href="https://github.com/noobstar2306/ai-devops-bot/issues" target="_blank" rel="noopener" class="link-btn">
+        Report issue ↗
+      </a>
+    </div>
+
+    <!-- Auto-refresh countdown -->
+    <div class="refresh-note">
+      ↻ Page refreshes automatically in <span id="countdown">60</span>s
+    </div>
+
+  </div>
+
+  <!-- Footer brand -->
+  <footer>
+    ganesh.putran &nbsp;·&nbsp;
+    <a href="https://github.com/noobstar2306/ai-devops-bot" target="_blank" rel="noopener">ai-devops-bot</a>
+  </footer>
+
+  <script>
+    // ── COUNTDOWN TIMER ──
+    // Counts down from 60 seconds and updates the #countdown display.
+    // The page auto-refreshes via the <meta http-equiv="refresh"> tag.
+    let seconds = 60;
+    const countdownEl = document.getElementById('countdown');
+
+    const timer = setInterval(() => {
+      seconds -= 1;
+      countdownEl.textContent = seconds;
+      if (seconds <= 0) clearInterval(timer);
+    }, 1000);
+  </script>
+
+</body>
+</html>

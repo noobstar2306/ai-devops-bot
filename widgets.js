@@ -521,22 +521,28 @@ No bullet points. No preamble. Just the tip directly.`
 
   let readmeLoaded = false;
 
-  // Lightweight Markdown-to-HTML converter for tooltip display
+  // Lightweight Markdown-to-HTML converter for tooltip display.
+  // Strips images, converts links to plain text, handles headings/lists/bold/code.
   function parseMarkdown(md) {
     return md
+      .replace(/<!--[\s\S]*?-->/g, '')       // remove HTML comments
+      .replace(/!\[.*?\]\(.*?\)/g, '')        // remove images
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links → plain text
       .split('\n')
       .map(line => {
         if (line.startsWith('### ')) return `<h3>${line.slice(4)}</h3>`;
         if (line.startsWith('## '))  return `<h2>${line.slice(3)}</h2>`;
         if (line.startsWith('# '))   return `<h1>${line.slice(2)}</h1>`;
         if (/^[-*] /.test(line))     return `<li>${line.slice(2)}</li>`;
-        if (line.trim() === '')      return '';
+        if (/^\d+\. /.test(line))    return `<li>${line.replace(/^\d+\. /,'')}</li>`;
+        if (line.trim() === '' || line.startsWith('---')) return '';
         return `<p>${line}</p>`;
       })
       .join('')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/(<li>.*?<\/li>)+/g, m => `<ul>${m}</ul>`);
+      .replace(/(<li>.*?<\/li>)+/g, m => `<ul>${m}</ul>`)
+      .replace(/<p><\/p>/g, '');
   }
 
   async function fetchReadme() {

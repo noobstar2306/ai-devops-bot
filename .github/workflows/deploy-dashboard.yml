@@ -1,13 +1,18 @@
 # .github/workflows/deploy-dashboard.yml
-# This workflow deploys your dashboard to GitHub Pages
-# every time you push to main.
+# Deploys the full repo to GitHub Pages on every push to main.
+# Injects all secrets before uploading so keys never appear in source code.
+# Serves:
+#   /                    → dashboard/index.html (pipeline dashboard)
+#   /hobbies.html        → hobbies page
+#   /widgets.js          → loaded by portfolio site
+#   /maintenance.html    → swap in during updates
 
 name: Deploy Dashboard
 
 on:
   push:
     branches: ["main"]
-  workflow_dispatch:  # lets you trigger it manually too
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -27,24 +32,39 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
+      # Step 1: Check out repo code onto the runner
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Step 2: Configure GitHub Pages
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      # Step 3: Inject all secrets into HTML and JS files before deploying.
+      # Keys come from GitHub Secrets — never committed to source code.
       - name: Inject secrets
         run: |
           sed -i "s/PASTE_GEMINI_TIPS_KEY_HERE/${{ secrets.GEMINI_TIPS_KEY }}/g" dashboard/index.html
+          sed -i "s/PASTE_GEMINI_TIPS_KEY_HERE/${{ secrets.GEMINI_TIPS_KEY }}/g" hobbies.html
           sed -i "s/PASTE_GEMINI_TIPS_KEY_HERE/${{ secrets.GEMINI_TIPS_KEY }}/g" widgets.js
           sed -i "s/PASTE_GITHUB_PAT_HERE/${{ secrets.GH_PAT }}/g" widgets.js
-          sed -i "s/PASTE_GEMINI_TIPS_KEY_HERE/${{ secrets.GEMINI_TIPS_KEY }}/g" hobbies.html
 
+      # Step 4: Create a root index.html that redirects to the dashboard.
+      # This fixes the 404 at noobstar2306.github.io/ai-devops-bot/
+      # by making the root serve the dashboard automatically.
+      - name: Create root index redirect
+        run: |
+          cp dashboard/index.html index.html
+
+      # Step 5: Upload the full repo as the Pages artifact.
+      # This serves dashboard/, hobbies.html, widgets.js, maintenance.html
+      # all from the same GitHub Pages site.
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
           path: "."
-          
+
+      # Step 6: Deploy the uploaded artifact to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

@@ -587,23 +587,96 @@ No bullet points. No preamble. Just the tip directly.`
   // ──────────────────────────────────────────────────────────────────────────
 
   // Technical skill cards — each renders as one card with icon, title, desc, tags
+  // Updated to reflect all skills demonstrated across this project
   const TECH_SKILLS = [
-    { color:'c-green',  icon:'⚙️', title:'CI/CD Pipelines',      desc:'Building automated pipelines that test, validate, and deploy code on every push using GitHub Actions.',                       tags:['GitHub Actions','YAML','pytest','coverage'] },
-    { color:'c-blue',   icon:'🤖', title:'AI Integration',        desc:'Connecting LLM APIs into DevOps workflows to auto-explain failures and review code changes.',                               tags:['Gemini API','Prompt engineering','REST APIs'] },
-    { color:'c-purple', icon:'🐍', title:'Python scripting',      desc:'Writing automation scripts, API clients, and test suites that power the DevOps pipeline.',                                  tags:['Python 3','pytest','JSON','urllib'] },
-    { color:'c-amber',  icon:'📊', title:'Observability',         desc:'Building live dashboards that surface pipeline health, build history, and AI-generated summaries.',                         tags:['GitHub API','GitHub Pages','HTML/CSS/JS'] },
-    { color:'c-green',  icon:'🔀', title:'Git & Version Control', desc:'Managing branches, pull requests, and collaborative workflows using Git and GitHub.',                                       tags:['Git','GitHub','Pull requests','Branching'] },
-    { color:'c-blue',   icon:'🔒', title:'DevSecOps basics',      desc:'Storing secrets safely with GitHub Secrets and following security best practices in pipelines.',                            tags:['GitHub Secrets','Env vars','API key safety'] }
+    {
+      color:'c-green', icon:'⚙️',
+      title:'CI/CD Pipelines',
+      desc:'Building automated pipelines that test, validate, deploy, and monitor code on every push using GitHub Actions.',
+      tags:['GitHub Actions','YAML','pytest','coverage','pip caching']
+    },
+    {
+      color:'c-blue', icon:'🤖',
+      title:'AI Integration',
+      desc:'Connecting LLM APIs into DevOps workflows — failure analysis, code review, personalised recommendations, and AI-generated tips.',
+      tags:['Gemini API','Prompt engineering','REST APIs','JSON parsing']
+    },
+    {
+      color:'c-purple', icon:'🐍',
+      title:'Python scripting',
+      desc:'Writing automation scripts, API clients, health checkers, log analysers, and test suites that power the entire DevOps pipeline.',
+      tags:['Python 3.11','pytest','urllib','argparse','unittest.mock']
+    },
+    {
+      color:'c-amber', icon:'📊',
+      title:'Observability & monitoring',
+      desc:'Building live dashboards, access log analysers, and health check systems that surface pipeline and site health in real time.',
+      tags:['GitHub API','Caddy logs','JSON logs','log analysis','health checks']
+    },
+    {
+      color:'c-green', icon:'🔀',
+      title:'Git & version control',
+      desc:'Managing branches, pull requests, submodule pitfalls, and collaborative workflows. Debugged and resolved nested git repo issues.',
+      tags:['Git','GitHub','Pull requests','Branching','git rm --cached']
+    },
+    {
+      color:'c-blue', icon:'🔒',
+      title:'DevSecOps',
+      desc:'Injecting secrets at deploy time via GitHub Actions sed commands — API keys never committed to source code.',
+      tags:['GitHub Secrets','sed injection','GH_PAT','API key safety','OWASP basics']
+    },
+    {
+      color:'c-purple', icon:'🌐',
+      title:'Reverse proxy & networking',
+      desc:'Configured Caddy v2 as a local reverse proxy with structured JSON logging, port routing, and header forwarding.',
+      tags:['Caddy v2','reverse proxy','Caddyfile','HTTP headers','port routing']
+    },
+    {
+      color:'c-amber', icon:'☁️',
+      title:'Cloud & tunnelling',
+      desc:'Deployed public HTTPS endpoints using Cloudflare Tunnel without a domain — exposing local services securely to the internet.',
+      tags:['Cloudflare Tunnel','cloudflared','HTTPS','trycloudflare.com','WSL networking']
+    },
+    {
+      color:'c-green', icon:'🖥️',
+      title:'Linux & WSL',
+      desc:'Comfortable working in Ubuntu on WSL — installing packages, managing services with systemctl, file permissions, and bash scripting.',
+      tags:['Ubuntu','WSL2','systemctl','bash','apt','file permissions']
+    },
+    {
+      color:'c-blue', icon:'🎨',
+      title:'Frontend development',
+      desc:'Building professional dark-themed UIs with CSS custom properties, animations, modals, scroll reveal, and responsive layouts.',
+      tags:['HTML5','CSS3','Vanilla JS','CSS variables','IntersectionObserver']
+    }
   ];
 
   // Soft skill cards — personal working traits shown below the technical grid
   const SOFT_SKILLS = [
-    { icon:'🔍', title:'Problem solver',      desc:'Breaks down complex errors systematically — reading logs, isolating causes, and iterating until fixed.' },
-    { icon:'📖', title:'Fast learner',         desc:'Built a full AI DevOps pipeline from zero knowledge in a single day by learning and applying iteratively.' },
-    { icon:'🗣️', title:'Clear communicator',  desc:'Explains technical decisions in plain language — useful for cross-functional teams and documentation.' },
-    { icon:'🔄', title:'Iterative mindset',    desc:'Comfortable shipping imperfect work early, gathering feedback, and improving in small focused cycles.' },
-    { icon:'🤝', title:'Collaborative',        desc:'Uses pull requests, code review, and shared tooling to keep work transparent and team-friendly.' },
-    { icon:'🎯', title:'Attention to detail',  desc:'Catches edge cases in tests, naming clarity in code, and broken links in deployments before they ship.' }
+    {
+      icon:'🔍', title:'Problem solver',
+      desc:'Debugged nested git repos, WSL networking issues, Caddy permission errors, and Gemini API rate limits — reading errors carefully and iterating to fix.'
+    },
+    {
+      icon:'📖', title:'Fast learner',
+      desc:'Built a full AI DevOps pipeline, reverse proxy, Cloudflare tunnel, and log analyser from zero in a single session by learning and applying immediately.'
+    },
+    {
+      icon:'🗣️', title:'Clear communicator',
+      desc:'Explains technical decisions in plain language — useful for cross-functional teams, documentation, and writing readable code comments.'
+    },
+    {
+      icon:'🔄', title:'Iterative mindset',
+      desc:'Ships working features early, gathers feedback, and improves incrementally — every feature on this site went through multiple iterations.'
+    },
+    {
+      icon:'🏗️', title:'Systems thinker',
+      desc:'Separated concerns across two repos (appearance vs functionality), designed secret injection patterns, and planned a full DevOps roadmap.'
+    },
+    {
+      icon:'🎯', title:'Attention to detail',
+      desc:'Catches security issues (leaked API keys, nested git repos), broken links, missing error handling, and placeholder values before they ship.'
+    }
   ];
 
   // ── renderTechSkills ──

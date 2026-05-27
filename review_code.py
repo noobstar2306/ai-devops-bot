@@ -1,20 +1,57 @@
 # review_code.py
-# This script runs on every PR.
-# It fetches the code diff, sends it to Gemini for review,
-# and posts the feedback as a PR comment on GitHub.
+# Runs on every pull request in the CI pipeline.
+# Fetches the code diff from GitHub, sends it to Gemini for review,
+# and posts the feedback as a PR comment.
+#
+# Covers all file types in the repo:
+#   Python (.py), GitHub Actions (.yml), HTML (.html), JavaScript (.js)
 
 import os
-import sys
 import json
 import urllib.request
 import urllib.error
-import time
+from gemini_utils import call_gemini, post_github_comment
+
+
+# ── DIFF SIZE LIMIT ──
+# Caps the diff at 8000 characters before sending to Gemini.
+# Prevents context window errors on large PRs.
+MAX_DIFF_CHARS = 8000
+
+# ── FILE FILTER ──
+# Only review files with these extensions — skip binaries, lockfiles, etc.
+REVIEWABLE_EXTENSIONS = (".py", ".yml", ".yaml", ".html", ".js", ".md", ".txt")
+
+# ── PROMPT TEMPLATE ──
+# Instructs Gemini to review all file types in the project.
+REVIEW_PROMPT = """You are a helpful senior developer reviewing a pull request for a beginner DevOps engineer.
+The project is a portfolio site. Files may include:
+  - Python scripts (app.py, gemini_utils.py, explain_failure.py, review_code.py)
+  - GitHub Actions YAML workflows
+  - HTML/CSS portfolio pages (index.html, hobbies.html, dashboard/index.html)
+  - JavaScript widgets (widgets.js)
+
+Review the following code changes and give friendly, constructive feedback.
+Focus on: bugs, missing error handling, security issues, unclear naming, and improvements.
+Keep it under 300 words. Use bullet points. Be encouraging and specific.
+
+Code changes:
+{diff}
+"""
 
 
 def get_pr_diff() -> str:
-    """Fetch the code diff for this PR from GitHub."""
-    token = os.environ["GITHUB_TOKEN"]
-    repo  = os.environ["GITHUB_REPOSITORY"]
+    """
+    Fetch changed files for the current PR from the GitHub API.
+
+    Filters to only reviewable file extensions and truncates the total
+    diff to MAX_DIFF_CHARS to stay within Gemini's context window.
+
+    Returns:
+        A formatted string of file diffs ready to send to Gemini.
+    """
+    token     = os.environ["GITHUB_TOKEN"]
+    repo      = os.environ["GITHUB_REPOSITORY"]
     pr_number = os.environ["PR_NUMBER"]
 
     url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}/files"
@@ -23,94 +60,71 @@ def get_pr_diff() -> str:
         url,
         headers={
             "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github+json"
+            "Accept":        "application/vnd.github+json"
         }
     )
 
-    with urllib.request.urlopen(req) as response:
-        files = json.loads(response.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req) as response:
+            files = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"Failed to fetch PR diff: {e.code} {e.reason}") from e
 
-    # Build a readable diff summary
-    diff_text = ""
+    diff_text  = ""
+    file_count = 0
+
     for f in files:
         filename = f.get("filename", "")
-        patch    = f.get("patch", "(binary or no diff)")
-        diff_text += f"\n--- {filename} ---\n{patch}\n"
 
-    return diff_text if diff_text.strip() else "No code changes found."
+        # Skip files we don't want to review (binaries, lock files, etc.)
+        if not filename.endswith(REVIEWABLE_EXTENSIONS):
+            print(f"Skipping: {filename}")
+            continue
+
+        patch = f.get("patch", "(binary or no diff available)")
+        diff_text  += f"\n--- {filename} ---\n{patch}\n"
+        file_count += 1
+
+    if not diff_text.strip():
+        return "No reviewable code changes found in this PR."
+
+    # Truncate if diff exceeds the size limit
+    if len(diff_text) > MAX_DIFF_CHARS:
+        diff_text = diff_text[:MAX_DIFF_CHARS] + "\n\n... (diff truncated — too large)"
+        print(f"Diff truncated to {MAX_DIFF_CHARS} characters.")
+
+    print(f"Reviewing {file_count} file(s), {len(diff_text)} characters.")
+    return diff_text
 
 
-def ask_gemini(diff: str) -> str:
-    """Send the diff to Gemini and get a code review."""
-    api_key = os.environ["GEMINI_API_KEY"]
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+def review_pr() -> None:
+    """
+    Main function: fetch the PR diff, send to Gemini, post the review comment.
+    Handles errors gracefully so a failed review doesn't break the pipeline.
+    """
+    print("Fetching PR diff...")
+    diff = get_pr_diff()
 
-    prompt = f"""You are a helpful senior developer reviewing a pull request for a beginner.
-Review the following code changes and give friendly, constructive feedback.
-Focus on: bugs, missing error handling, unclear variable names, and improvements.
-Keep it under 300 words. Use bullet points. Be encouraging.
+    print("Sending diff to Gemini for review...")
+    prompt = REVIEW_PROMPT.format(diff=diff)
 
-Code changes:
-{diff}
-"""
+    try:
+        review = call_gemini(prompt)
+        print("Review received.")
+    except RuntimeError as e:
+        # Don't fail the pipeline if the AI review fails
+        print(f"Gemini review failed: {e}")
+        review = "AI code review unavailable for this PR — Gemini API error."
 
-    body = json.dumps({
-        "contents": [{"parts": [{"text": prompt}]}]
-    }).encode("utf-8")
-
-    req = urllib.request.Request(
-        url,
-        data=body,
-        headers={"Content-Type": "application/json"},
-        method="POST"
+    comment = (
+        "## 🤖 AI Code Review\n\n"
+        f"{review}\n\n"
+        "---\n"
+        "*Automated review by Gemini via your AI DevOps Bot*"
     )
 
-    for attempt in range(3):
-        try:
-            with urllib.request.urlopen(req) as response:
-                result = json.loads(response.read().decode("utf-8"))
-                return result["candidates"][0]["content"]["parts"][0]["text"]
-        except urllib.error.HTTPError as e:
-            if e.code == 429 and attempt < 2:
-                print(f"Rate limited, waiting 30 seconds... (attempt {attempt + 1}/3)")
-                time.sleep(30)
-            else:
-                raise
-
-
-def post_github_comment(comment: str):
-    """Post the review as a comment on the PR."""
-    token = os.environ["GITHUB_TOKEN"]
-    repo  = os.environ["GITHUB_REPOSITORY"]
-    pr_number = os.environ["PR_NUMBER"]
-
-    url = f"https://api.github.com/repos/{repo}/issues/{pr_number}/comments"
-
-    body = json.dumps({
-        "body": f"## AI Code Review\n\n{comment}\n\n---\n*Automated review by your AI DevOps Bot*"
-    }).encode("utf-8")
-
-    req = urllib.request.Request(
-        url,
-        data=body,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github+json",
-            "Content-Type": "application/json"
-        },
-        method="POST"
-    )
-
-    with urllib.request.urlopen(req) as response:
-        print(f"Review posted successfully: {response.status}")
+    post_github_comment(comment)
 
 
 if __name__ == "__main__":
-    print("Fetching PR diff...")
-    diff = get_pr_diff()
-    print(f"Got diff ({len(diff)} chars). Sending to Gemini...")
-
-    review = ask_gemini(diff)
-    print("Review received:\n", review)
-
-    post_github_comment(review)
+    review_pr()

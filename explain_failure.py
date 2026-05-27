@@ -1,88 +1,77 @@
 # explain_failure.py
-# This script runs when your CI pipeline fails.
-# It reads the error log, asks Gemini to explain it,
-# and posts the explanation as a comment on your GitHub PR.
+# Runs inside the CI pipeline when tests fail.
+# Reads the error log from a file, asks Gemini to explain it in plain English,
+# and posts the explanation as a comment on the GitHub PR.
+#
+# Usage: python explain_failure.py test_output.txt
+# (reads from file path — avoids shell argument length limits on large logs)
 
-import os
 import sys
-import json
-import urllib.request
-import urllib.error
+from gemini_utils import call_gemini, post_github_comment
 
-def ask_gemini(error_log: str) -> str:
-    """Send the error log to Gemini and get a plain-English explanation."""
-    api_key = os.environ["GEMINI_API_KEY"]
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
 
-    prompt = f"""You are a helpful DevOps assistant for a beginner developer.
+# ── PROMPT TEMPLATE ──
+# Instructs Gemini to act as a friendly DevOps assistant explaining CI failures.
+# Covers all file types in the repo: Python tests, HTML pages, JS widgets, YAML.
+FAILURE_PROMPT = """You are a helpful DevOps assistant for a beginner developer.
 A CI pipeline just failed. Explain what went wrong in simple, friendly language.
-Keep it under 200 words. Suggest one specific fix.
+The project is a portfolio site with Python scripts, GitHub Actions workflows,
+HTML/CSS pages, and a JavaScript widgets file.
+
+Keep your explanation under 200 words.
+Suggest one specific fix the developer can make right now.
 
 Here is the error output:
 {error_log}
 """
 
-    body = json.dumps({
-        "contents": [{"parts": [{"text": prompt}]}]
-    }).encode("utf-8")
 
-    req = urllib.request.Request(
-        url,
-        data=body,
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
+def explain_failure(log_file_path: str) -> None:
+    """
+    Read a test output log file, send it to Gemini for analysis,
+    and post the explanation as a GitHub PR comment.
 
-    with urllib.request.urlopen(req) as response:
-        result = json.loads(response.read().decode("utf-8"))
-        return result["candidates"][0]["content"]["parts"][0]["text"]
-
-
-def post_github_comment(comment: str):
-    """Post a comment on the GitHub PR that triggered this pipeline."""
-    token = os.environ["GITHUB_TOKEN"]
-    repo  = os.environ["GITHUB_REPOSITORY"]
-    pr_number = os.environ.get("PR_NUMBER", "")
-
-    if not pr_number:
-        print("No PR number found — skipping GitHub comment.")
-        print("AI explanation:\n", comment)
-        return
-
-    url = f"https://api.github.com/repos/{repo}/issues/{pr_number}/comments"
-
-    body = json.dumps({
-        "body": f"## AI Build Failure Analysis\n\n{comment}\n\n---\n*Powered by Gemini via your AI DevOps Bot*"
-    }).encode("utf-8")
-
-    req = urllib.request.Request(
-        url,
-        data=body,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github+json",
-            "Content-Type": "application/json"
-        },
-        method="POST"
-    )
-
+    Args:
+        log_file_path: Path to the file containing the CI error output.
+    """
+    # Read error log from file — safer than passing large text as a shell arg
     try:
-        with urllib.request.urlopen(req) as response:
-            print(f"Comment posted successfully: {response.status}")
-    except urllib.error.HTTPError as e:
-        print(f"Failed to post comment: {e.code} {e.reason}")
+        with open(log_file_path, "r") as f:
+            error_log = f.read().strip()
+    except FileNotFoundError:
+        print(f"Error: log file '{log_file_path}' not found.")
+        sys.exit(1)
+
+    if not error_log:
+        print("Log file is empty — nothing to analyse.")
+        sys.exit(0)
+
+    # Truncate very large logs to avoid exceeding Gemini's context window
+    MAX_LOG_CHARS = 6000
+    if len(error_log) > MAX_LOG_CHARS:
+        error_log = error_log[:MAX_LOG_CHARS] + "\n\n... (log truncated)"
+        print(f"Log truncated to {MAX_LOG_CHARS} characters.")
+
+    print("Sending error log to Gemini for analysis...")
+    prompt      = FAILURE_PROMPT.format(error_log=error_log)
+    explanation = call_gemini(prompt)
+    print("Gemini explanation received.")
+
+    # Format as a clear PR comment with context
+    comment = (
+        "## 🤖 AI Build Failure Analysis\n\n"
+        f"{explanation}\n\n"
+        "---\n"
+        "*Powered by Gemini via your AI DevOps Bot*"
+    )
+
+    post_github_comment(comment)
 
 
 if __name__ == "__main__":
-    # Read the error log passed as a command-line argument
     if len(sys.argv) < 2:
-        print("Usage: python explain_failure.py '<error log>'")
+        print("Usage: python explain_failure.py <path-to-log-file>")
+        print("Example: python explain_failure.py test_output.txt")
         sys.exit(1)
 
-    error_log = sys.argv[1]
-    print("Sending error to Gemini for analysis...")
-
-    explanation = ask_gemini(error_log)
-    print("Gemini says:\n", explanation)
-
-    post_github_comment(explanation)
+    explain_failure(sys.argv[1])

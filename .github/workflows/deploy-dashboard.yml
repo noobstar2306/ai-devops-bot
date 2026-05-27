@@ -40,14 +40,11 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # Step 3: Inject all secrets into HTML and JS files before deploying.
-      # Keys come from GitHub Secrets — never committed to source code.
+      # Step 3: Inject Gemini key into dashboard only (dashboard has its own tips call)
+      # widgets.js no longer needs key injection — all calls go through Cloudflare Worker
       - name: Inject secrets
         run: |
           sed -i "s/PASTE_GEMINI_TIPS_KEY_HERE/${{ secrets.GEMINI_TIPS_KEY }}/g" dashboard/index.html
-          sed -i "s/PASTE_GEMINI_TIPS_KEY_HERE/${{ secrets.GEMINI_TIPS_KEY }}/g" hobbies.html
-          sed -i "s/PASTE_GEMINI_TIPS_KEY_HERE/${{ secrets.GEMINI_TIPS_KEY }}/g" widgets.js
-          sed -i "s/PASTE_GITHUB_PAT_HERE/${{ secrets.GH_PAT }}/g" widgets.js
 
       # Step 4: Create a root index.html that redirects to the dashboard.
       # This fixes the 404 at noobstar2306.github.io/ai-devops-bot/

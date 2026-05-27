@@ -3,9 +3,9 @@
  * Hosted in: ai-devops-bot repo (noobstar2306.github.io/ai-devops-bot/widgets.js)
  * Loaded by: noobstar2306.github.io (portfolio) via a single <script> tag
  *
- * This file owns ALL interactive functionality so the portfolio repo
- * only needs to manage appearance. To update any feature, edit this
- * file in ai-devops-bot — the portfolio picks up changes automatically.
+ * All API calls go through the Cloudflare Worker proxy at WORKER_URL.
+ * API keys (Gemini, GitHub PAT) live in Cloudflare environment variables
+ * and never appear in this file or any deployed HTML/JS.
  *
  * Features:
  *   1. Floating buttons  — 💡 tips, 🎯 hobbies, ❓ help (stacked bottom-right)
@@ -18,11 +18,9 @@
   'use strict';
 
   // ── CONFIGURATION ──
-  // Keys are injected at deploy time by the ai-devops-bot GitHub Actions
-  // workflow via sed replacement before the file is uploaded to Pages.
-  // These placeholders are never committed with real values.
-  const GEMINI_KEY  = 'PASTE_GEMINI_TIPS_KEY_HERE';
-  const GH_PAT      = 'PASTE_GITHUB_PAT_HERE';
+  // All API calls go through the Cloudflare Worker.
+  // No API keys in this file — they live safely in Cloudflare secrets.
+  const WORKER_URL = 'https://gemini-proxy.ganeshputran.workers.dev';
 
   // ── ISSUE ROUTING ──
   // Defines which GitHub repo each issue type is created in.
@@ -368,29 +366,25 @@
     const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
     const topic    = TOPICS[Math.floor(Math.random() * TOPICS.length)];
 
-    badgeEl.textContent    = category;
-    categoryEl.textContent = topic;
+    badgeEl.textContent     = category;
+    categoryEl.textContent  = topic;
     loadingEl.style.display = 'flex';
     textEl.style.display    = 'none';
     textEl.innerHTML        = '';
 
     try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text:
-              `Give me one "${category}" about: ${topic}.
+      // Call Cloudflare Worker proxy — Gemini key never touches the browser
+      const res = await fetch(`${WORKER_URL}/gemini`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: `Give me one "${category}" about: ${topic}.
 This must be strictly about DevOps, CI/CD, cloud engineering, or AI/ML in DevOps.
 Start with a bold heading using <strong> tags, then 2-3 sentences.
 Keep it practical for a beginner DevOps engineer.
 No bullet points. No preamble. Just the tip directly.`
-            }] }]
-          })
-        }
-      );
+        })
+      });
       const data    = await res.json();
       const tipText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not load tip. Try again!';
       loadingEl.style.display = 'none';
@@ -475,15 +469,16 @@ No bullet points. No preamble. Just the tip directly.`
     statusEl.style.display = 'none';
 
     try {
-      // POST to the routed repo — bug/question → ai-devops-bot, suggestion/improvement → portfolio repo
-      const res = await fetch(`https://api.github.com/repos/${route.repo}/issues`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${GH_PAT}`,
-          'Accept':        'application/vnd.github+json',
-          'Content-Type':  'application/json'
-        },
-        body: JSON.stringify({ title: issueTitle, body: issueBody, labels: [issueType] })
+      // Call Cloudflare Worker proxy — GH_PAT never touches the browser
+      const res = await fetch(`${WORKER_URL}/github-issue`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          repo:   route.repo,
+          title:  issueTitle,
+          body:   issueBody,
+          labels: [issueType]
+        })
       });
 
       const data = await res.json();
@@ -555,9 +550,9 @@ No bullet points. No preamble. Just the tip directly.`
     readmeLoaded = true;
     const bodyEl = document.getElementById('gp-readme-body');
     try {
+      // Call Cloudflare Worker proxy for README fetch
       const res  = await fetch(
-        `https://api.github.com/repos/${README_REPO}/readme`,
-        { headers: { 'Accept': 'application/vnd.github+json' } }
+        `${WORKER_URL}/readme?repo=${README_REPO}`,
       );
       const data = await res.json();
       const raw  = atob(data.content.replace(/\n/g, ''));

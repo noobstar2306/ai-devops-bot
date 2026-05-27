@@ -120,9 +120,18 @@ sudo systemctl start caddy
 cloudflared tunnel --url http://localhost:8080
 
 # Log analysis
-sudo python3 log_analyser.py
-sudo python3 log_analyser.py --errors
+sudo python3 log_analyser.py              # all three logs
+sudo python3 log_analyser.py --errors     # errors only
 sudo python3 log_analyser.py --log portfolio --tail 50
+
+# Hourly health check (cron job — runs automatically)
+# Results saved to ~/health_log.txt
+cat ~/health_log.txt                      # view all results
+tail -10 ~/health_log.txt                 # last run only
+grep "UNHEALTHY" ~/health_log.txt         # any failures
+
+# Run health check manually
+python3 app.py
 ```
 
 ---
@@ -142,7 +151,7 @@ sudo python3 log_analyser.py --log portfolio --tail 50
 | Layer | Tools |
 |-------|-------|
 | CI/CD | GitHub Actions |
-| AI | Google Gemini 2.5 Flash |
+| AI | Google Gemini 2.5 Flash-Lite (free tier — 1000 RPD) |
 | API proxy | Cloudflare Workers (free) |
 | Testing | pytest, pytest-cov, unittest.mock |
 | Hosting | GitHub Pages |
@@ -160,7 +169,9 @@ sudo python3 log_analyser.py --log portfolio --tail 50
 - **4** CI pipeline stages
 - **3** AI integrations (failure explainer, code reviewer, tips/recommendations)
 - **3** live pages (portfolio, dashboard, hobbies)
-- **1** Cloudflare Worker proxy
+- **1** Cloudflare Worker proxy (gemini-proxy.ganeshputran.workers.dev)
+- **1** shared utility module (gemini_utils.py)
+- **1** hourly health check via cron job
 - **0** API keys in source code or deployed files
 
 ---

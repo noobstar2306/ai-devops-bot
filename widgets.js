@@ -579,4 +579,93 @@ No bullet points. No preamble. Just the tip directly.`
     if (e.key === 'Escape') { closeTips(); closeHelp(); }
   });
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // SKILLS RENDERING
+  // Populates #tech-skills-grid and #soft-skills-grid in the portfolio.
+  // Defined here so the portfolio HTML stays data-free — update skills
+  // by editing these arrays only, no HTML changes needed.
+  // ──────────────────────────────────────────────────────────────────────────
+
+  // Technical skill cards — each renders as one card with icon, title, desc, tags
+  const TECH_SKILLS = [
+    { color:'c-green',  icon:'⚙️', title:'CI/CD Pipelines',      desc:'Building automated pipelines that test, validate, and deploy code on every push using GitHub Actions.',                       tags:['GitHub Actions','YAML','pytest','coverage'] },
+    { color:'c-blue',   icon:'🤖', title:'AI Integration',        desc:'Connecting LLM APIs into DevOps workflows to auto-explain failures and review code changes.',                               tags:['Gemini API','Prompt engineering','REST APIs'] },
+    { color:'c-purple', icon:'🐍', title:'Python scripting',      desc:'Writing automation scripts, API clients, and test suites that power the DevOps pipeline.',                                  tags:['Python 3','pytest','JSON','urllib'] },
+    { color:'c-amber',  icon:'📊', title:'Observability',         desc:'Building live dashboards that surface pipeline health, build history, and AI-generated summaries.',                         tags:['GitHub API','GitHub Pages','HTML/CSS/JS'] },
+    { color:'c-green',  icon:'🔀', title:'Git & Version Control', desc:'Managing branches, pull requests, and collaborative workflows using Git and GitHub.',                                       tags:['Git','GitHub','Pull requests','Branching'] },
+    { color:'c-blue',   icon:'🔒', title:'DevSecOps basics',      desc:'Storing secrets safely with GitHub Secrets and following security best practices in pipelines.',                            tags:['GitHub Secrets','Env vars','API key safety'] }
+  ];
+
+  // Soft skill cards — personal working traits shown below the technical grid
+  const SOFT_SKILLS = [
+    { icon:'🔍', title:'Problem solver',      desc:'Breaks down complex errors systematically — reading logs, isolating causes, and iterating until fixed.' },
+    { icon:'📖', title:'Fast learner',         desc:'Built a full AI DevOps pipeline from zero knowledge in a single day by learning and applying iteratively.' },
+    { icon:'🗣️', title:'Clear communicator',  desc:'Explains technical decisions in plain language — useful for cross-functional teams and documentation.' },
+    { icon:'🔄', title:'Iterative mindset',    desc:'Comfortable shipping imperfect work early, gathering feedback, and improving in small focused cycles.' },
+    { icon:'🤝', title:'Collaborative',        desc:'Uses pull requests, code review, and shared tooling to keep work transparent and team-friendly.' },
+    { icon:'🎯', title:'Attention to detail',  desc:'Catches edge cases in tests, naming clarity in code, and broken links in deployments before they ship.' }
+  ];
+
+  // ── renderTechSkills ──
+  // Injects one skill card per TECH_SKILLS entry into #tech-skills-grid.
+  // Only runs if the grid exists on the page (portfolio only).
+  function renderTechSkills() {
+    const grid = document.getElementById('tech-skills-grid');
+    if (!grid) return;
+    grid.innerHTML = TECH_SKILLS.map(s => `
+      <article class="skill-card ${s.color} reveal">
+        <div class="skill-icon">${s.icon}</div>
+        <h3>${s.title}</h3>
+        <p>${s.desc}</p>
+        <div class="tag-group">${s.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+      </article>
+    `).join('');
+    grid.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+  }
+
+  // ── renderSoftSkills ──
+  // Injects one soft-skill card per SOFT_SKILLS entry into #soft-skills-grid.
+  // Only runs if the grid exists on the page (portfolio only).
+  function renderSoftSkills() {
+    const grid = document.getElementById('soft-skills-grid');
+    if (!grid) return;
+    grid.innerHTML = SOFT_SKILLS.map(s => `
+      <div class="soft-card reveal">
+        <div class="soft-card-icon">${s.icon}</div>
+        <div><h4>${s.title}</h4><p>${s.desc}</p></div>
+      </div>
+    `).join('');
+    grid.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+  }
+
+  // ── Scroll reveal observer ──
+  // Watches .reveal elements and fades them in when they enter the viewport.
+  // unobserve() stops watching once visible — more efficient than continuous checks.
+  const revealObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        revealObserver.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+  // ── Initialise ──
+  // Wrapped in DOMContentLoaded to guarantee the portfolio's #tech-skills-grid
+  // and #soft-skills-grid elements exist before we try to inject into them.
+  // Without this, the script may run before the HTML is fully parsed,
+  // causing getElementById to return null and skills to silently not render.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      renderTechSkills();
+      renderSoftSkills();
+    });
+  } else {
+    // DOM already ready (script loaded with defer or after DOMContentLoaded)
+    renderTechSkills();
+    renderSoftSkills();
+  }
+
 })();
